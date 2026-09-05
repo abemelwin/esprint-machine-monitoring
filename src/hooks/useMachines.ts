@@ -55,7 +55,10 @@ export function useAddMachine() {
     }) => {
       const rows = Array.from({ length: payload.qty }, () => ({
         ...payload.data,
-        serial_no: payload.qty > 1 ? '' : payload.data.serial_no,
+        serial_no:        payload.qty > 1 ? '' : (payload.data.serial_no || null),
+        reservation_date: payload.data.reservation_date || null,
+        delivery_date:    payload.data.delivery_date    || null,
+        dispatch_date:    payload.data.dispatch_date    || null,
       }))
       const { data, error } = await supabase.from('machines').insert(rows).select()
       if (error) throw error
@@ -79,9 +82,15 @@ export function useUpdateMachine() {
       updates: Partial<Omit<Machine, 'id' | 'created_at'>>
       event: string
     }) => {
+      // Convert empty date strings to null
+      const sanitized = { ...payload.updates }
+      const dateFields = ['reservation_date', 'delivery_date', 'dispatch_date'] as const
+      dateFields.forEach(f => {
+        if ((sanitized as Record<string, unknown>)[f] === '') (sanitized as Record<string, unknown>)[f] = null
+      })
       const { data, error } = await supabase
         .from('machines')
-        .update({ ...payload.updates, updated_at: nowStamp() })
+        .update({ ...sanitized, updated_at: nowStamp() })
         .eq('id', payload.id)
         .select()
         .single()
