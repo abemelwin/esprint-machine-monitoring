@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Field, Grid2, Input, Select, Textarea, Banner } from '../ui/Field'
 import { LookupSelect } from '../ui/LookupSelect'
-import { ALL_STATUSES, today } from '../../lib/constants'
+import { ALL_STATUSES } from '../../lib/constants'
 import type { Machine } from '../../types/database'
 
 export interface MachineFormData {
@@ -55,7 +55,7 @@ interface Props {
 
 export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
   const isAdd = !machine
-  const [form, setForm] = useState<MachineFormData>(machine ? fromMachine(machine) : { ...empty, reservation_date: today() })
+  const [form, setForm] = useState<MachineFormData>(machine ? fromMachine(machine) : { ...empty })
   const [qty, setQty] = useState(1)
   const [err, setErr] = useState('')
 
@@ -63,7 +63,12 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
   const onChange = (k: keyof MachineFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => set(k)(e.target.value)
 
   const handleSubmit = () => {
-    if (!form.model.trim()) { setErr('Please enter a Model.'); return }
+    if (!form.status)           { setErr('Status is required.'); return }
+    if (!form.po_no.trim())     { setErr('PO No. is required.'); return }
+    if (!form.brand)            { setErr('Brand is required.'); return }
+    if (!form.model.trim())     { setErr('Model is required.'); return }
+    if (!form.serial_no.trim()) { setErr('Serial No. is required.'); return }
+    if (!form.branch)           { setErr('Branch is required.'); return }
     setErr('')
     onSubmit(form, isAdd ? Math.max(1, Math.min(qty, 500)) : 1)
   }
@@ -82,7 +87,7 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
             {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </Select>
         </Field>
-        <Field label="PO No.">
+        <Field label="PO No." required>
           <Input value={form.po_no} onChange={onChange('po_no')} placeholder="Purchase order no." />
         </Field>
       </Grid2>
@@ -97,7 +102,7 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
       )}
 
       <Grid2>
-        <Field label="Brand">
+        <Field label="Brand" required>
           <LookupSelect kind="brands" value={form.brand} onChange={set('brand')} />
         </Field>
         <Field label="Model" required>
@@ -106,10 +111,10 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
       </Grid2>
 
       <Grid2>
-        <Field label="Serial No.">
+        <Field label="Serial No." required>
           <Input value={form.serial_no} onChange={onChange('serial_no')} placeholder="e.g. GR20241280" />
         </Field>
-        <Field label="Branch">
+        <Field label="Branch" required>
           <LookupSelect kind="branches" value={form.branch} onChange={set('branch')} />
         </Field>
       </Grid2>
