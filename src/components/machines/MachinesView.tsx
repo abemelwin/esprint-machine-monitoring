@@ -245,8 +245,7 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
                         <div className="mt-3">
                           <Button variant="primary" size="sm" onClick={() => setAddOpen(true)}>＋ Add a machine</Button>
                         </div>
-                      )}
-                    </div>
+                      )}                    </div>
                   </td>
                 </tr>
               )}

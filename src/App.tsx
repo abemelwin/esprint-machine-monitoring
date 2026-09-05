@@ -10,6 +10,9 @@ import { TBAView }      from './components/tba/TBAView'
 import { AdminPanel }   from './components/admin/AdminPanel'
 import { supabase }     from './lib/supabase'
 
+// Bump this version string on every deploy — users will see a refresh banner
+const APP_VERSION = '1.0.3'
+
 type MainView = 'machines' | 'stock' | 'tba'
 
 export default function App() {
@@ -24,6 +27,21 @@ export default function App() {
   const [addOpen,    setAddOpen]    = useState(false)
   const [theme,      setTheme]      = useState<'light' | 'dark'>('light')
   const [savedAt,    setSavedAt]    = useState('')
+  const [newVersion, setNewVersion] = useState(false)
+
+  // Detect new deploy — check version every 5 minutes
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await fetch('/version.json?t=' + Date.now())
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.version && data.version !== APP_VERSION) setNewVersion(true)
+      } catch { /* offline or not found — ignore */ }
+    }
+    const interval = setInterval(check, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   // persist theme
   useEffect(() => {
@@ -102,6 +120,18 @@ export default function App() {
 
   return (
     <div className="w-full max-w-full p-3.5 px-4">
+      {/* Update banner */}
+      {newVersion && (
+        <div className="flex items-center justify-between gap-3 bg-[var(--accent)] text-white px-4 py-2.5 rounded-[9px] mb-3 text-[13px]">
+          <span>🎉 A new version of the app is available.</span>
+          <button
+            className="bg-white text-[var(--accent)] font-[650] px-3 py-1 rounded-[7px] text-[12px] cursor-pointer hover:brightness-95"
+            onClick={() => window.location.reload()}
+          >
+            Refresh now
+          </button>
+        </div>
+      )}
       {/* Header */}
       <header className="flex items-center justify-between gap-3.5 flex-wrap">
         <div className="flex items-center gap-3">
