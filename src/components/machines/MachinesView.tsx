@@ -82,8 +82,15 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     [...new Set(machines.map(m => m[key]).filter(Boolean))].sort() as string[]
 
   // ── actions ───────────────────────────────────────────────────
+  const onMutationError = (err: unknown) => {
+    alert((err as Error).message ?? 'Something went wrong. Please refresh and try again.')
+  }
+
   const markArrived = (m: Machine) => {
-    updateMachine.mutate({ id: m.id, updates: { status: 'In Stock' }, event: 'Arrived → moved to In Stock' })
+    updateMachine.mutate({
+      id: m.id, updates: { status: 'In Stock' }, event: 'Arrived → moved to In Stock',
+      requireStatus: 'Incoming',
+    }, { onError: onMutationError })
   }
 
   const doReserve = (m: Machine, data: { client_name: string; client_code: string; ae: string; reservation_date: string }) => {
@@ -91,7 +98,8 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
       id: m.id,
       updates: { status: 'Reserved', ...data },
       event: `Reserved for ${data.client_name}`,
-    }, { onSuccess: () => setReserveTarget(null) })
+      requireStatus: m.status, // must still be In Stock / Demo / Recertified
+    }, { onSuccess: () => setReserveTarget(null), onError: (err) => { setReserveTarget(null); onMutationError(err) } })
   }
 
   const doDeliver = (m: Machine, data: Parameters<typeof updateMachine.mutate>[0]['updates']) => {
@@ -99,7 +107,8 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
       id: m.id,
       updates: { status: 'Delivered', ...data },
       event: `Delivered to ${(data as { client_name?: string }).client_name} on ${(data as { delivery_date?: string }).delivery_date}`,
-    }, { onSuccess: () => setDeliverTarget(null) })
+      requireStatus: m.status, // must still be Reserved / In Stock / Demo / Recertified
+    }, { onSuccess: () => setDeliverTarget(null), onError: (err) => { setDeliverTarget(null); onMutationError(err) } })
   }
 
   const moveToTBA = (m: Machine) => {
@@ -112,7 +121,8 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
       id: m.id,
       updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null },
       event: `Moved reservation (${m.client_name}) to TBA list — unit returned to available stock`,
-    })
+      requireStatus: 'Reserved',
+    }, { onError: onMutationError })
   }
 
   const cancelReserve = (m: Machine) => {
@@ -121,7 +131,8 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
       id: m.id,
       updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null },
       event: `Reservation cancelled (was ${m.client_name})`,
-    })
+      requireStatus: 'Reserved',
+    }, { onError: onMutationError })
   }
 
   const doDelete = (m: Machine) => {

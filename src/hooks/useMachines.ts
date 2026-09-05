@@ -81,7 +81,26 @@ export function useUpdateMachine() {
       id: string
       updates: Partial<Omit<Machine, 'id' | 'created_at'>>
       event: string
+      // Optional: if provided, the update will only proceed if current status matches
+      requireStatus?: string
     }) => {
+      // ── Concurrency guard for status-changing operations ──────────
+      // If requireStatus is set (e.g. 'In Stock' for reserve, 'Reserved' for deliver),
+      // fetch the latest status first and abort if it has changed.
+      if (payload.requireStatus) {
+        const { data: current } = await supabase
+          .from('machines')
+          .select('status')
+          .eq('id', payload.id)
+          .single()
+        if (!current) throw new Error('Machine not found.')
+        if (current.status !== payload.requireStatus) {
+          throw new Error(
+            `This machine is no longer "${payload.requireStatus}" — it was just updated to "${current.status}" by another user. Please refresh and try again.`
+          )
+        }
+      }
+
       // Convert empty date strings to null
       const sanitized = { ...payload.updates }
       const dateFields = ['reservation_date', 'delivery_date', 'dispatch_date'] as const
