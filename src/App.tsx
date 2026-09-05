@@ -10,8 +10,9 @@ import { TBAView }      from './components/tba/TBAView'
 import { AdminPanel }   from './components/admin/AdminPanel'
 import { supabase }     from './lib/supabase'
 
-// Bump this version string on every deploy — users will see a refresh banner
-const APP_VERSION = '1.0.3'
+// Version is auto-injected at build time from git commit hash
+declare const __APP_VERSION__: string
+const APP_VERSION = __APP_VERSION__
 
 type MainView = 'machines' | 'stock' | 'tba'
 
