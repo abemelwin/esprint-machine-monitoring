@@ -21,9 +21,9 @@ export default function App() {
 
   const [view,       setView]       = useState<MainView>('machines')
   const [adminOpen,  setAdminOpen]  = useState(false)
+  const [addOpen,    setAddOpen]    = useState(false)
   const [theme,      setTheme]      = useState<'light' | 'dark'>('light')
   const [savedAt,    setSavedAt]    = useState('')
-  const [addMachineTrigger, setAddMachineTrigger] = useState(0)
 
   // persist theme
   useEffect(() => {
@@ -125,7 +125,7 @@ export default function App() {
           {pm.manageUsers && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={handleBackup}>💾 Backup</button>}
           <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={handleExportCSV}>⬇ CSV</button>
           <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={toggleTheme}>{theme === 'dark' ? '☀' : '🌙'}</button>
-          {pm.edit && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--accent)] text-white border border-[var(--accent)] hover:brightness-110 px-3.5 py-2 rounded-[9px] text-[13px]" onClick={() => { setView('machines'); setAddMachineTrigger(n => n + 1) }}>＋ Add Machine</button>}
+          {pm.edit && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--accent)] text-white border border-[var(--accent)] hover:brightness-110 px-3.5 py-2 rounded-[9px] text-[13px]" onClick={() => { setView('machines'); setAddOpen(true) }}>＋ Add Machine</button>}
           <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={logout}>⎋ Logout</button>
         </div>
       </header>
@@ -145,7 +145,7 @@ export default function App() {
 
       {/* Views */}
       <div className="mt-3.5">
-        {view === 'machines' && <MachinesView triggerAdd={addMachineTrigger > 0} key={addMachineTrigger} />}
+        {view === 'machines' && <MachinesView addOpen={addOpen} setAddOpen={setAddOpen} />}
         {view === 'stock'    && <StockView />}
         {view === 'tba'      && <TBAView />}
       </div>
