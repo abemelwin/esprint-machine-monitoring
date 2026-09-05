@@ -147,3 +147,16 @@ export function useAddLookup() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['lookups'] }),
   })
 }
+
+// ── Delete lookup value ────────────────────────────────────────────
+export function useDeleteLookup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ table, value }: { table: 'branches' | 'aes' | 'brands' | 'models'; value: string }) => {
+      const col = table === 'brands' || table === 'models' ? 'name' : 'code'
+      const { error } = await supabase.from(table).delete().eq(col, value)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['lookups'] }),
+  })
+}
