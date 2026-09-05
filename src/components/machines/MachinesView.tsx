@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useMachines, useAddMachine, useUpdateMachine, useDeleteMachine } from '../../hooks/useMachines'
 import { useAddTBA } from '../../hooks/useTBA'
 import { useAuth } from '../../hooks/useAuth'
@@ -18,7 +18,7 @@ type SortDir = 1 | -1
 
 const DASH = <span className="text-[var(--text-muted)]">—</span>
 
-export function MachinesView() {
+export function MachinesView({ triggerAdd }: { triggerAdd?: boolean }) {
   const { user } = useAuth()
   const pm = getPerms(user)
   const hideCols = hideClientCols(user)
@@ -29,6 +29,9 @@ export function MachinesView() {
   const updateMachine = useUpdateMachine()
   const deleteMachine = useDeleteMachine()
   const addTBA        = useAddTBA()
+
+  // Open add modal when triggered from header button
+  useEffect(() => { if (triggerAdd) setAddOpen(true) }, [triggerAdd])
 
   // ── filters ──────────────────────────────────────────────────
   const [q,         setQ]         = useState('')
