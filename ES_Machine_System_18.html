@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ES Machine Monitoring System</title>
+<style>
+  :root{
+    --surface-0:#f4f4f2;--surface-1:#fcfcfb;--surface-2:#efeeea;--surface-3:#e7e6e1;
+    --border:#e2e1db;--border-strong:#cfcec7;
+    --text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#8a8981;
+    --stock:#1baf7a;--incoming:#2a78d6;--reserved:#eda100;--delivered:#008300;--tba:#8a5cd6;--recert:#0d9488;--demo:#d6459b;--pullout:#8a5a2b;
+    --accent:#2a78d6;--danger:#e34948;
+    --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.05);
+    --radius:12px;color-scheme:light;
+  }
+  :root[data-theme="dark"]{
+    --surface-0:#141413;--surface-1:#1e1e1c;--surface-2:#262624;--surface-3:#2f2f2c;
+    --border:#333330;--border-strong:#454540;
+    --text-primary:#f5f5f0;--text-secondary:#c3c2b7;--text-muted:#8f8e85;
+    --stock:#199e70;--incoming:#3987e5;--reserved:#c98500;--delivered:#2aa32a;--tba:#9d78e0;--recert:#14b8a6;--demo:#e87ba4;--pullout:#b07b45;
+    --accent:#3987e5;--danger:#e66767;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 2px 10px rgba(0,0,0,.28);color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--surface-0);color:var(--text-primary);line-height:1.45;font-size:14px;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:100%;margin:0;padding:14px 16px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#1baf7a);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;letter-spacing:-1px}
+  h1{font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .sub{color:var(--text-muted);font-size:12.5px}
+  .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{background:var(--surface-1);border:1px solid var(--border);color:var(--text-secondary);
+    padding:8px 13px;border-radius:9px;font-size:13px;cursor:pointer;font-weight:550;transition:.15s;display:inline-flex;gap:6px;align-items:center;font-family:inherit;white-space:nowrap}
+  .btn:hover{border-color:var(--border-strong);color:var(--text-primary)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{filter:brightness(1.07);color:#fff}
+  .btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+  .btn.danger{color:var(--danger)}
+  .btn.ghost{background:none}
+  .save-dot{font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:5px}
+  .save-dot .d{width:8px;height:8px;border-radius:50%;background:var(--stock)}
+
+  .viewnav{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:11px;margin:14px 0 4px;width:fit-content}
+  .vtab{padding:8px 18px;border-radius:8px;border:none;background:none;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--text-secondary);transition:.15s;font-family:inherit}
+  .vtab:hover{color:var(--text-primary)}
+  .vtab.active{background:var(--surface-1);color:var(--text-primary);box-shadow:var(--shadow)}
+  .reorder-note{font-size:12.5px;color:var(--text-secondary);margin:2px 2px 12px;display:flex;align-items:center;gap:8px}
+  tr.rp-crit{background:rgba(227,73,72,.11)}
+  tr.rp-crit:hover{background:rgba(227,73,72,.17)}
+  tr.rp-crit td:last-child{background:rgba(227,73,72,.11)!important}
+  tr.rp-warn{background:rgba(237,161,0,.11)}
+  tr.rp-warn:hover{background:rgba(237,161,0,.17)}
+  tr.rp-warn td:last-child{background:rgba(237,161,0,.11)!important}
+  .rp-input{width:64px;background:var(--surface-0);border:1px solid var(--border);color:var(--text-primary);padding:5px 8px;border-radius:7px;font-size:13px;font-family:inherit;text-align:center}
+  .rp-input:focus{outline:none;border-color:var(--accent)}
+  .big-num{font-size:15px;font-weight:750;font-variant-numeric:tabular-nums}
+  .link-btn{background:color-mix(in srgb,var(--tba) 14%,transparent);color:var(--tba);border:1px solid color-mix(in srgb,var(--tba) 35%,transparent);
+    padding:3px 10px;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;font-variant-numeric:tabular-nums}
+  .link-btn:hover{background:color-mix(in srgb,var(--tba) 24%,transparent)}
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:18px 0}
+  .kpi{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer;transition:.15s}
+  .kpi:hover{transform:translateY(-2px);border-color:var(--border-strong)}
+  .kpi.active{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+  .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .kpi .cap{font-size:11px;color:var(--text-secondary);font-weight:650;text-transform:uppercase;letter-spacing:.03em;display:flex;align-items:center;gap:6px}
+  .kpi .num{font-size:29px;font-weight:750;letter-spacing:-.03em;margin-top:5px;font-variant-numeric:tabular-nums}
+  .kpi .foot{font-size:11px;color:var(--text-muted);margin-top:1px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:8px 0 14px}
+  .toolbar input[type=search],.toolbar select{background:var(--surface-1);border:1px solid var(--border);color:var(--text-primary);
+    padding:8px 11px;border-radius:9px;font-size:13px;font-family:inherit}
+  .toolbar input[type=search]{min-width:250px}
+  .toolbar input:focus,.toolbar select:focus,.modal input:focus,.modal select:focus,.modal textarea:focus{outline:none;border-color:var(--accent)}
+  .toolbar .spacer{flex:1}
+  .rc{font-size:12.5px;color:var(--text-muted);white-space:nowrap}
+  .chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--border);padding:7px 11px;border-radius:9px;cursor:pointer;user-select:none;white-space:nowrap}
+  .chk input{cursor:pointer}
+
+  .table-card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .table-scroll{overflow-x:auto;max-height:640px;overflow-y:auto}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead th{position:sticky;top:0;background:var(--surface-2);text-align:left;padding:10px 12px;font-weight:650;color:var(--text-secondary);
+    font-size:11px;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;cursor:pointer;border-bottom:1px solid var(--border)}
+  thead th:hover{color:var(--text-primary)}
+  tbody td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+  tbody tr:hover{background:var(--surface-2)}
+  tbody tr:last-child td{border-bottom:none}
+  thead th:last-child{position:sticky;right:0;background:var(--surface-2);z-index:3;text-align:right;box-shadow:-7px 0 9px -7px rgba(0,0,0,.18)}
+  tbody td:last-child{position:sticky;right:0;background:var(--surface-1);box-shadow:-7px 0 9px -7px rgba(0,0,0,.14)}
+  tbody tr:hover td:last-child{background:var(--surface-2)}
+  .note-cell{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+  .actions{flex-wrap:nowrap}
+  .actions .btn.sm{padding:5px 8px}
+  /* whole-row tint per status */
+  tr.st-incoming,    tr.st-incoming td:last-child{background:color-mix(in srgb,#2a78d6 10%,var(--surface-1))}
+  tr.st-incoming:hover,    tr.st-incoming:hover td:last-child{background:color-mix(in srgb,#2a78d6 19%,var(--surface-1))}
+  tr.st-instock,     tr.st-instock td:last-child{background:color-mix(in srgb,#1baf7a 12%,var(--surface-1))}
+  tr.st-instock:hover,     tr.st-instock:hover td:last-child{background:color-mix(in srgb,#1baf7a 21%,var(--surface-1))}
+  tr.st-recertified, tr.st-recertified td:last-child{background:color-mix(in srgb,#0d9488 14%,var(--surface-1))}
+  tr.st-recertified:hover, tr.st-recertified:hover td:last-child{background:color-mix(in srgb,#0d9488 23%,var(--surface-1))}
+  tr.st-demo,        tr.st-demo td:last-child{background:color-mix(in srgb,#d6459b 11%,var(--surface-1))}
+  tr.st-demo:hover,        tr.st-demo:hover td:last-child{background:color-mix(in srgb,#d6459b 20%,var(--surface-1))}
+  tr.st-reserved,    tr.st-reserved td:last-child{background:color-mix(in srgb,#eda100 15%,var(--surface-1))}
+  tr.st-reserved:hover,    tr.st-reserved:hover td:last-child{background:color-mix(in srgb,#eda100 24%,var(--surface-1))}
+  tr.st-tba,         tr.st-tba td:last-child{background:color-mix(in srgb,#8a5cd6 12%,var(--surface-1))}
+  tr.st-tba:hover,         tr.st-tba:hover td:last-child{background:color-mix(in srgb,#8a5cd6 21%,var(--surface-1))}
+  tr.st-delivered,   tr.st-delivered td:last-child{background:color-mix(in srgb,#8a8981 13%,var(--surface-1))}
+  tr.st-delivered:hover,   tr.st-delivered:hover td:last-child{background:color-mix(in srgb,#8a8981 21%,var(--surface-1))}
+  tr.st-pulloutparts,tr.st-pulloutparts td:last-child{background:color-mix(in srgb,#8a5a2b 12%,var(--surface-1))}
+  tr.st-pulloutparts:hover,tr.st-pulloutparts:hover td:last-child{background:color-mix(in srgb,#8a5a2b 20%,var(--surface-1))}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--text-secondary)}
+  .strong{font-weight:600}
+  .muted{color:var(--text-muted)}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:650;white-space:nowrap}
+  .actions{display:flex;gap:5px;justify-content:flex-end;flex-wrap:nowrap}
+  .empty{padding:56px 20px;text-align:center;color:var(--text-muted)}
+  .empty .big{font-size:38px;margin-bottom:8px}
+
+  /* user chip + login */
+  .user-chip{font-size:12.5px;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--border);padding:6px 11px;border-radius:20px;white-space:nowrap}
+  .user-chip b{color:var(--text-primary)}
+  .login-overlay{position:fixed;inset:0;background:var(--surface-0);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .login-card{background:var(--surface-1);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:380px;padding:30px 28px;text-align:center}
+  .login-logo{width:54px;height:54px;border-radius:13px;background:linear-gradient(135deg,var(--accent),#1baf7a);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:22px;margin:0 auto 14px}
+  .login-card h2{font-size:18px;font-weight:700}
+  .login-sub{color:var(--text-muted);font-size:12.5px;margin:3px 0 18px}
+  .login-card .field{text-align:left;margin-bottom:13px}
+  .login-err{color:var(--danger);font-size:12.5px;min-height:16px;margin-bottom:8px}
+  .login-hint{margin-top:16px;font-size:11px;color:var(--text-muted);line-height:1.6;border-top:1px solid var(--border);padding-top:12px}
+  .perm-tag{display:inline-block;font-size:11px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);padding:1px 8px;border-radius:20px;margin:1px 0;white-space:nowrap}
+  .perm-list{display:flex;flex-direction:column;gap:10px;background:var(--surface-0);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .field .perm-row{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:13px;font-weight:400;margin-bottom:0;color:var(--text-primary)}
+  .field .perm-row input{margin:2px 0 0 0;flex:none;width:16px;height:16px;cursor:pointer}
+  /* modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--surface-1);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+    width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+  .modal .mhead{padding:18px 22px 6px;display:flex;align-items:center;justify-content:space-between}
+  .modal .mhead h2{font-size:17px;font-weight:700}
+  .modal .mhead .x{background:none;border:none;font-size:22px;color:var(--text-muted);cursor:pointer;line-height:1}
+  .modal .mbody{padding:8px 22px 18px}
+  .modal .mfoot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:9px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface-1)}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:5px}
+  .field label .req{color:var(--danger)}
+  .field input,.field select,.field textarea{width:100%;background:var(--surface-0);border:1px solid var(--border);color:var(--text-primary);
+    padding:9px 11px;border-radius:9px;font-size:13.5px;font-family:inherit}
+  .field textarea{min-height:60px;resize:vertical}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:11.5px;color:var(--text-muted);margin-top:4px}
+  .banner{background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+    color:var(--text-secondary);padding:9px 12px;border-radius:9px;font-size:12.5px;margin-bottom:14px}
+  .lifecycle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin:6px 0 16px;flex-wrap:wrap}
+  .lifecycle .st{padding:3px 9px;border-radius:20px;background:var(--surface-2);font-weight:600}
+  .history{margin-top:6px;border-top:1px solid var(--border);padding-top:10px}
+  .history .h{font-size:11.5px;color:var(--text-muted);display:flex;gap:8px;padding:3px 0}
+  .history .h b{color:var(--text-secondary);font-weight:600}
+
+  footer{text-align:center;color:var(--text-muted);font-size:11.5px;margin:24px 0 10px;line-height:1.7}
+  @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}.toolbar input[type=search]{min-width:100%}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap" style="display:none">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">ES</div>
+      <div>
+        <h1>Machine Monitoring System</h1>
+        <div class="sub">ES Print Group of Companies · inventory · incoming · reservations · deliveries</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="user-chip" id="userChip"></span>
+      <span class="save-dot" id="saveDot"><span class="d"></span>Saved</span>
+      <button class="btn" id="btnUsers" onclick="openAdmin('roles')" style="display:none">🛡️ Access</button>
+      <button class="btn" id="btnImport" onclick="doImport()">⬆ Import</button>
+      <button class="btn" id="btnBackup" onclick="doExportJSON()">💾 Backup</button>
+      <button class="btn" onclick="doExportCSV()">⬇ CSV</button>
+      <button class="btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn primary" id="btnAdd" onclick="openAdd()">＋ Add Machine</button>
+      <button class="btn" id="btnLogout" onclick="logout()" title="Sign out">⎋ Logout</button>
+    </div>
+  </header>
+
+  <div class="viewnav">
+    <button class="vtab active" id="vtab-machines" onclick="setMainView('machines')">🖨 Machines</button>
+    <button class="vtab" id="vtab-stock" onclick="setMainView('stock')">📊 Stock Levels</button>
+    <button class="vtab" id="vtab-tba" onclick="setMainView('tba')">📝 TBA List</button>
+  </div>
+
+  <div id="machinesView">
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="🔍 Search serial, model, client, code, branch…" oninput="render()">
+    <select id="fStatus" onchange="render()"></select>
+    <select id="fBrand" onchange="render()"></select>
+    <select id="fModel" onchange="render()"></select>
+    <select id="fBranch" onchange="render()"></select>
+    <select id="fAE" onchange="render()"></select>
+    <label class="chk"><input type="checkbox" id="hideDel" onchange="render()"> Hide delivered</label>
+    <span class="spacer"></span>
+    <span class="rc" id="rc"></span>
+  </div>
+
+  <div class="table-card">
+    <div class="table-scroll">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /machinesView -->
+
+  <div id="stockView" style="display:none">
+    <div class="toolbar">
+      <input type="search" id="sq" placeholder="🔍 Search brand or model…" oninput="buildStock()">
+      <select id="sfBrand" onchange="buildStock()"></select>
+      <select id="sfBranch" onchange="buildStock()"></select>
+      <label class="chk"><input type="checkbox" id="sReorderOnly" onchange="buildStock()"> Show only items to reorder</label>
+      <button class="btn" onclick="exportStockCSV()">⬇ CSV</button>
+      <span class="spacer"></span>
+      <span class="rc" id="src"></span>
+    </div>
+    <div class="reorder-note" id="reorderNote"></div>
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead id="sthead"></thead>
+          <tbody id="stbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /stockView -->
+
+  <div id="tbaView" style="display:none">
+    <div class="toolbar">
+      <input type="search" id="tq" placeholder="🔍 Search brand, model, client…" oninput="buildTBA()">
+      <select id="tfBrand" onchange="buildTBA()"></select>
+      <select id="tfModel" onchange="buildTBA()"></select>
+      <select id="tfAE" onchange="buildTBA()"></select>
+      <span class="spacer"></span>
+      <button class="btn" onclick="exportTBACSV()">⬇ CSV</button>
+      <button class="btn primary" id="btnAddTBA" onclick="openTBAForm(-1)">＋ Add TBA</button>
+      <span class="rc" id="trc"></span>
+    </div>
+    <div class="reorder-note" id="tbaNote"></div>
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead id="tthead"></thead>
+          <tbody id="ttbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /tbaView -->
+
+  <footer id="foot"></footer>
+</div>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">ES</div>
+    <h2>Machine Monitoring System</h2>
+    <div class="login-sub">ES Print Group of Companies — sign in to continue</div>
+    <div class="field"><label>Username</label><input id="loginUser" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="btn primary" style="width:100%;justify-content:center" onclick="doLogin()">Sign in</button>
+    <div class="login-hint" id="loginHint"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+"use strict";
+const KEY='es_machine_system_v1';
+const STATUS={
+  'Incoming':{color:'var(--incoming)',hex:'#2a78d6',icon:'🚚'},
+  'In Stock':{color:'var(--stock)',hex:'#1baf7a',icon:'📦'},
+  'Recertified':{color:'var(--recert)',hex:'#0d9488',icon:'♻️'},
+  'Demo':{color:'var(--demo)',hex:'#d6459b',icon:'🧪'},
+  'Reserved':{color:'var(--reserved)',hex:'#eda100',icon:'🔖'},
+  'Delivered':{color:'var(--delivered)',hex:'#008300',icon:'✅'},
+  'Pullout Parts':{color:'var(--pullout)',hex:'#8a5a2b',icon:'🔧'},
+};
+// TBA is a soft-reservation FLAG on a unit (not a physical status): the unit stays In Stock / available.
+const TBA_HEX='#8a5cd6';
+const SEED_BRANCHES=['CAVITE','ISABELA','MLA','PANG'];
+const SEED_AES=['DF','JVE'];
+let state={machines:[],seq:1,branches:[],aes:[],brands:[],models:[],reorder:{},users:[],roles:[],tbaList:[]};
+let sortKey='updated', sortDir=-1;
+let mainView='machines';
+let stockIndex=[];
+
+/* ---------- roles & auth ---------- */
+const SESSION_KEY='es_machine_session_v1';
+// A permission toggle set defines what a role can do. viewClient=false hides Client Name + Location.
+const PERM_DEFS=[
+  {k:'edit',       label:'Manage inventory',      hint:'Add, edit, delete units · mark arrived · set reorder points'},
+  {k:'reserve',    label:'Reserve & move to TBA', hint:'Create reservations and transfer them to the TBA list'},
+  {k:'deliver',    label:'Deliver',               hint:'Mark reserved/in-stock units as delivered'},
+  {k:'unreserve',  label:'Unreserve',             hint:'Cancel reservations / remove from TBA'},
+  {k:'manageUsers',label:'Manage users & roles',  hint:'Admin — manage roles, users, import & backup'},
+  {k:'viewClient', label:'See ALL client names & locations', hint:'Checked = see every client. Unchecked = see only the clients of the user\'s own AE / approved AEs (set per user).'},
+];
+const DEFAULT_ROLES=[
+  {key:'inventory_accounting',label:'Inventory Accounting',perms:{edit:true,reserve:true,deliver:true,unreserve:true,manageUsers:true,viewClient:true}},
+  {key:'sales_admin',label:'Sales Admin',perms:{viewClient:false}},
+  {key:'asm',label:'Area Sales Manager',perms:{viewClient:false}},
+  {key:'team_leader',label:'Team Leader',perms:{viewClient:false}},
+  {key:'account_exec',label:'Account Executive',perms:{viewClient:false}},
+];
+const ROLES_REV=2;  // bump to push permission revisions onto existing saved roles
+function roleByKey(k){ return (state.roles||[]).find(r=>r.key===k) || DEFAULT_ROLES.find(r=>r.key===k) || null; }
+let currentUser=null;
+function hashPass(pw){
+  let h1=0xdeadbeef, h2=0x41c6ce57; const s='es-print-salt::'+String(pw);
+  for(let i=0;i<s.length;i++){const ch=s.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return (4294967296*(2097151&h2)+(h1>>>0)).toString(16);
+}
+function perms(){
+  const role=currentUser?roleByKey(currentUser.r):null;
+  const P=(role&&role.perms)||{};
+  return {view:true, edit:!!P.edit, reserve:!!P.reserve, deliver:!!P.deliver, unreserve:!!P.unreserve,
+    manageUsers:!!P.manageUsers, importBackup:!!P.manageUsers, viewAllClients:!!P.viewClient};
+}
+function guard(p){ if(!perms()[p]){ alert('Your role does not have permission for this action.'); return false; } return true; }
+/* ---- per-AE client visibility ---- */
+// The set of AE codes whose client name/location this user may see. Empty = none (unless viewAllClients).
+function clientAEset(){
+  const s=new Set();
+  if(currentUser){
+    if(currentUser.ae) s.add(String(currentUser.ae).trim());
+    (currentUser.approvedAEs||[]).forEach(a=>{ a=String(a).trim(); if(a)s.add(a); });
+  }
+  return s;
+}
+// Can the current user see the client name/location on a record with this AE value?
+function canSeeClient(aeVal){
+  if(perms().viewAllClients) return true;
+  return clientAEset().has(String(aeVal||'').trim());
+}
+// True when NO client info is ever visible to this user → drop the columns entirely.
+function hideClientCols(){ return !perms().viewAllClients && clientAEset().size===0; }
+function seedUsers(){
+  return [
+    {u:'admin', n:'Administrator', r:'inventory_accounting', h:hashPass('admin123')},
+    {u:'salesadmin', n:'Sales Admin', r:'sales_admin', h:hashPass('sales123')},
+    {u:'asm', n:'Area Sales Manager', r:'asm', h:hashPass('asm123'), approvedAEs:['DF','JVE']},
+    {u:'tl', n:'Team Leader', r:'team_leader', h:hashPass('tl123'), approvedAEs:['DF']},
+    {u:'ae', n:'Account Executive', r:'account_exec', h:hashPass('ae123'), ae:'DF'},
+  ];
+}
+function doLogin(){
+  const u=($('loginUser').value||'').trim().toLowerCase(), p=$('loginPass').value||'';
+  const user=(state.users||[]).find(x=>x.u.toLowerCase()===u);
+  if(!user || user.h!==hashPass(p)){ $('loginErr').textContent='Invalid username or password.'; return; }
+  currentUser=user; try{localStorage.setItem(SESSION_KEY,user.u);}catch(e){}
+  $('loginPass').value=''; $('loginErr').textContent='';
+  applyAuth();
+}
+function logout(){ currentUser=null; try{localStorage.removeItem(SESSION_KEY);}catch(e){} $('loginUser').value=''; $('loginPass').value=''; applyAuth(); setTimeout(()=>$('loginUser').focus(),50); }
+function applyAuth(){
+  const inApp=!!currentUser;
+  $('loginOverlay').style.display=inApp?'none':'flex';
+  document.querySelector('.wrap').style.display=inApp?'block':'none';
+  if(!inApp){ setTimeout(()=>$('loginUser').focus(),50); return; }
+  const role=roleByKey(currentUser.r);
+  $('userChip').innerHTML=`<b>${esc(currentUser.n||currentUser.u)}</b> · ${esc(role?role.label:currentUser.r)}`;
+  const pm=perms();
+  $('btnAdd').style.display=pm.edit?'':'none';
+  $('btnImport').style.display=pm.importBackup?'':'none';
+  $('btnBackup').style.display=pm.importBackup?'':'none';
+  $('btnUsers').style.display=pm.manageUsers?'':'none';
+  populateFilters(); render(); if(mainView==='stock')buildStock();
+}
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const nowStamp=()=>new Date().toISOString().slice(0,16).replace('T',' ');
+
+/* ---------- sample seed ---------- */
+function mk(o){ return Object.assign({serial:'',poNo:'',model:'',brand:'',branch:'',status:'In Stock',client:'',clientCode:'',location:'',ae:'',reservationDate:'',deliveryDate:'',dispatchDate:'',notes:''}, o); }
+function seed(){
+  return {seq:9, branches:SEED_BRANCHES.slice(), aes:SEED_AES.slice(), reorder:{'GRANDO||MK8':2,'EPSON||I3200':3},
+    tbaList:[{id:100,brand:'GRANDO',model:'MK8',client:'AVISHA PRINTING',clientCode:'ADPS',ae:'DF',reservationDate:today(),location:'Dagupan',notes:'Sample TBA reservation — waiting for stock allotment.',created:nowStamp()}],
+    machines:[
+    mk({id:1,serial:'GR20241280',model:'MK8',brand:'GRANDO',branch:'MLA',status:'In Stock',
+      notes:'Sample: a machine sitting in the warehouse, available to sell.',updated:nowStamp(),
+      history:[{t:nowStamp(),e:'Added to In Stock'}]}),
+    mk({id:2,serial:'NQKONKBH0110',model:'I3200',brand:'EPSON',branch:'ISABELA',status:'In Stock',
+      updated:nowStamp(),history:[{t:nowStamp(),e:'Added to In Stock'}]}),
+    mk({id:3,serial:'JX6U000396',poNo:'PO-2026-088',model:'XPJ1642-WR',brand:'MUTOH',branch:'',status:'Incoming',
+      notes:'Sample: ordered from supplier, not yet arrived.',updated:nowStamp(),
+      history:[{t:nowStamp(),e:'Logged as Incoming'}]}),
+    mk({id:7,serial:'DM-778812',model:'MK8',brand:'GRANDO',branch:'MLA',status:'Demo',
+      notes:'Sample: demo unit deployed for client trials.',updated:nowStamp(),
+      history:[{t:nowStamp(),e:'Logged as Demo'}]}),
+    mk({id:8,serial:'RC-449021',model:'I3200',brand:'EPSON',branch:'CAVITE',status:'Recertified',
+      notes:'Sample: refurbished / recertified stock, sellable.',updated:nowStamp(),
+      history:[{t:nowStamp(),e:'Logged as Recertified'}]}),
+    mk({id:4,serial:'M406101271',model:'CE8000',brand:'GRAPHTEC',branch:'CAVITE',status:'Reserved',
+      client:'528 MINIMART',clientCode:'528',location:'Cavite City',ae:'JVE',reservationDate:today(),
+      notes:'Sample: reserved for a client, waiting to be delivered.',updated:nowStamp(),
+      history:[{t:nowStamp(),e:'Added to In Stock'},{t:nowStamp(),e:'Reserved for 528 MINIMART'}]}),
+    mk({id:5,serial:'GR20241281',model:'MK8',brand:'GRANDO',branch:'PANG',status:'In Stock',
+      notes:'Sample: available in stock (the AVISHA reservation is on the TBA list, not allotted to a unit).',updated:nowStamp(),
+      history:[{t:nowStamp(),e:'Added to In Stock'}]}),
+    mk({id:6,serial:'X6EU000385',model:'EP-SF',brand:'EPSON',branch:'MLA',status:'Delivered',
+      client:'PURECOLOR PRINTING',clientCode:'PCP',location:'Manila',ae:'DF',reservationDate:'2026-07-20',deliveryDate:'2026-08-05',dispatchDate:'2026-08-03',
+      notes:'Sample: fully delivered to the client.',updated:nowStamp(),
+      history:[{t:nowStamp(),e:'Reserved for PURECOLOR PRINTING'},{t:nowStamp(),e:'Delivered 2026-08-05'}]}),
+  ]};
+}
+
+/* ---------- persistence ---------- */
+let storageOK=true;
+function save(){
+  state.machines.forEach(m=>{});
+  try{ localStorage.setItem(KEY,JSON.stringify(state)); flashSaved(); }
+  catch(e){ storageOK=false; $('saveDot').innerHTML='<span class="d" style="background:var(--reserved)"></span>Use Backup to save'; }
+}
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw){state=JSON.parse(raw); return true;} }catch(e){storageOK=false;}
+  return false;
+}
+function flashSaved(){ const s=$('saveDot'); s.innerHTML='<span class="d"></span>Saved '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+
+/* ---------- CRUD ---------- */
+function nextId(){ return state.seq++; }
+function findM(id){ return state.machines.find(m=>m.id===id); }
+function touch(m,ev){ m.updated=nowStamp(); if(ev){ m.history=m.history||[]; m.history.push({t:nowStamp(),e:ev}); } }
+function commit(){ save(); render(); }
+
+/* ---------- filters ---------- */
+function uniq(a){return [...new Set(a.filter(Boolean))].sort((x,y)=>String(x).localeCompare(String(y)));}
+function populateFilters(){
+  const rows=state.machines;
+  const fill=(id,key,lbl)=>{const cur=$(id).value;
+    $(id).innerHTML=`<option value="">All ${lbl}</option>`+uniq(rows.map(m=>m[key])).map(o=>`<option>${esc(o)}</option>`).join('');
+    if([...$(id).options].some(o=>o.value===cur))$(id).value=cur;};
+  const curS=$('fStatus').value;
+  $('fStatus').innerHTML='<option value="">All statuses</option>'+Object.keys(STATUS).map(s=>`<option>${s}</option>`).join('');
+  if([...$('fStatus').options].some(o=>o.value===curS))$('fStatus').value=curS;
+  fill('fBrand','brand','brands');
+  fill('fModel','model','models');
+  fill('fBranch','branch','branches');
+  fill('fAE','ae','AEs');
+}
+
+/* ---------- status pill ---------- */
+function pill(s){const m=STATUS[s]||{hex:'#888',icon:''};
+  return `<span class="pill" style="background:${hexA(m.hex,.14)};color:${m.color}"><span class="dot" style="background:${m.hex}"></span>${s}</span>`;}
+function hexA(hex,a){ if(hex.startsWith('var'))return hex; const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
+
+/* ---------- render table ---------- */
+function render(){
+  let rows=state.machines.slice();
+  const q=$('q').value.trim().toLowerCase();
+  const fs=$('fStatus').value, fbr=$('fBrand').value, fm=$('fModel').value, fb=$('fBranch').value, fa=$('fAE').value;
+  if($('hideDel').checked) rows=rows.filter(m=>m.status!=='Delivered');
+  if(fs)rows=rows.filter(m=>m.status===fs);
+  if(fbr)rows=rows.filter(m=>m.brand===fbr);
+  if(fm)rows=rows.filter(m=>m.model===fm);
+  if(fb)rows=rows.filter(m=>m.branch===fb);
+  if(fa)rows=rows.filter(m=>m.ae===fa);
+  const pm=perms();
+  const hideCols=hideClientCols();
+  if(q)rows=rows.filter(m=>{
+    const baseHit=['serial','poNo','model','brand','clientCode','branch','ae','notes'].some(k=>String(m[k]||'').toLowerCase().includes(q));
+    const cliHit=canSeeClient(m.ae) && [m.client,m.location].some(v=>String(v||'').toLowerCase().includes(q));
+    return baseHit||cliHit;
+  });
+  rows=rows.slice().sort((a,b)=>{let x=a[sortKey]||'',y=b[sortKey]||'';return String(x).localeCompare(String(y),undefined,{numeric:true})*sortDir;});
+
+  let cols=[
+    {k:'status',t:'Status'},{k:'poNo',t:'PO No.'},{k:'brand',t:'Brand'},{k:'model',t:'Model'},
+    {k:'branch',t:'Branch'},{k:'client',t:'Client Name'},{k:'clientCode',t:'Code'},{k:'location',t:'Location'},
+    {k:'ae',t:'AE'},{k:'reservationDate',t:'Reservation Date'},{k:'deliveryDate',t:'Delivery Date'},
+    {k:'serial',t:'Serial'},
+    {k:'dispatchDate',t:'Shipment Receipt / Transfer Date'},{k:'notes',t:'Notes'}
+  ];
+  if(hideCols) cols=cols.filter(c=>c.k!=='client'&&c.k!=='location');
+  const showActions = pm.edit||pm.reserve||pm.deliver||pm.unreserve;
+  $('thead').innerHTML='<tr>'+cols.map(c=>`<th onclick="setSort('${c.k}')">${c.t}${sortKey===c.k?(sortDir>0?' ▲':' ▼'):''}</th>`).join('')+(showActions?'<th style="text-align:right">Actions</th>':'')+'</tr>';
+
+  if(!rows.length){
+    $('tbody').innerHTML=`<tr><td colspan="${cols.length+1}"><div class="empty"><div class="big">📭</div>No machines to show.${pm.edit?'<br><button class="btn primary sm" style="margin-top:12px" onclick="openAdd()">＋ Add a machine</button>':''}</div></td></tr>`;
+  } else {
+    const dash='<span class="muted">—</span>';
+    $('tbody').innerHTML=rows.map(m=>{
+      const cell=k=>{
+        const v=m[k];
+        if(k==='status')return `<td style="white-space:nowrap">${pill(m.status)}</td>`;
+        if(k==='serial'||k==='poNo')return `<td class="mono">${v?esc(v):dash}</td>`;
+        if(k==='model')return `<td class="strong">${v?esc(v):dash}</td>`;
+        if(k==='client'){ if(!canSeeClient(m.ae))return '<td><span class="muted" title="Hidden — not your AE">•••</span></td>'; return `<td class="strong">${v?esc(v):dash}</td>`; }
+        if(k==='location'){ if(!canSeeClient(m.ae))return '<td><span class="muted">•••</span></td>'; return `<td style="white-space:nowrap">${v?esc(v):dash}</td>`; }
+        if(k==='notes')return `<td class="muted note-cell"${v?` title="${esc(v)}"`:''}>${v?esc(v):''}</td>`;
+        if(k==='branch'){const t=BRANCH_TITLE(v);return `<td${t?` title="${esc(t)}"`:''}>${v?esc(v):dash}</td>`;}
+        return `<td style="white-space:nowrap">${v?esc(v):dash}</td>`;
+      };
+      const slug='st-'+String(m.status||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      return `<tr class="${slug}">${cols.map(c=>cell(c.k)).join('')}${showActions?`<td><div class="actions">${actionBtns(m)}</div></td>`:''}</tr>`;
+    }).join('');
+  }
+  $('rc').textContent=rows.length+' of '+state.machines.length+' shown';
+  window._rows=rows; window._cols=cols;
+}
+function BRANCH_TITLE(){return '';}
+function setSort(k){ if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=1;} render(); }
+
+function actionBtns(m){
+  const pm=perms();
+  const B=(fn,icon,title,cls)=>`<button class="btn sm ${cls||''}" title="${title}" onclick="${fn}(${m.id})">${icon}</button>`;
+  let b='';
+  const stockLike=['In Stock','Demo','Recertified'].includes(m.status);
+  if(pm.edit && m.status==='Incoming') b+=B('markArrived','📦','Mark arrived (→ In Stock)');
+  if(pm.reserve && stockLike) b+=B('openReserve','🔖','Reserve');
+  if(pm.deliver && (stockLike||m.status==='Reserved')) b+=B('openDeliver','✅','Deliver');
+  if(pm.reserve && m.status==='Reserved') b+=B('moveToTBA','📝','Move reservation to TBA list (unit returns to available stock)');
+  if(pm.unreserve && m.status==='Reserved') b+=B('cancelReserve','↩','Unreserve');
+  if(pm.edit) b+=B('openEdit','✎','Edit','ghost');
+  if(pm.edit) b+=B('delMachine','🗑','Delete','ghost danger');
+  return b;
+}
+
+/* ---------- actions ---------- */
+function markArrived(id){if(!guard('edit'))return;const m=findM(id);if(!m)return;m.status='In Stock';touch(m,'Arrived → moved to In Stock');commit();}
+function moveToTBA(id){
+  if(!guard('reserve'))return;const m=findM(id);if(!m)return;
+  state.tbaList.push({id:nextId(),brand:m.brand||'',model:m.model||'',client:m.client||'',clientCode:m.clientCode||'',
+    ae:m.ae||'',reservationDate:m.reservationDate||today(),location:m.location||'',notes:m.notes||'',created:nowStamp()});
+  const c=m.client; m.status='In Stock'; m.client=''; m.clientCode=''; m.ae=''; m.reservationDate='';
+  touch(m,'Moved reservation'+(c?` (${c})`:'')+' to TBA list — unit returned to available stock');
+  commit();
+}
+function cancelReserve(id){if(!guard('unreserve'))return;const m=findM(id);if(!m)return;m.status='In Stock';const c=m.client;m.client='';m.clientCode='';m.ae='';m.reservationDate='';touch(m,'Reservation cancelled'+(c?` (was ${c})`:''));commit();}
+function delMachine(id){if(!guard('edit'))return;const m=findM(id);if(!m)return;if(!confirm(`Delete ${m.model||''} ${m.serial||''}? This removes it from the system.`))return;state.machines=state.machines.filter(x=>x.id!==id);commit();}
+
+/* ---------- modal core ---------- */
+function openModal(html){$('modal').innerHTML=html;$('modalBg').classList.add('show');}
+function closeModal(){$('modalBg').classList.remove('show');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function val(id){return $(id)?$(id).value.trim():'';}
+
+/* ---------- managed dropdowns (Branch / AE) ---------- */
+function optsFor(list, sel){
+  let arr=(list||[]).slice();
+  if(sel && !arr.includes(sel)) arr.unshift(sel);
+  return '<option value=""></option>'+arr.map(v=>`<option ${v===sel?'selected':''}>${esc(v)}</option>`).join('');
+}
+const OPT_LABEL={branches:'branch code (e.g. MLA, CDO)',aes:'AE / staff initials',brands:'brand (e.g. EPSON)',models:'model (e.g. I3200)'};
+const OPT_SHORT={branches:'branch…',aes:'AE…',brands:'brand…',models:'model…'};
+function selectFrom(id, kind, sel){ return `<select id="${id}" onchange="if(this.value==='__add')addOpt(this,'${kind}')">${optsFor(state[kind], sel||'')}<option value="__add">＋ Add new ${OPT_SHORT[kind]}</option></select>`; }
+function branchSelect(id, sel){ return selectFrom(id,'branches',sel); }
+function aeSelect(id, sel){ return selectFrom(id,'aes',sel); }
+function brandSelect(id, sel){ return selectFrom(id,'brands',sel); }
+function modelSelect(id, sel){ return selectFrom(id,'models',sel); }
+function addOpt(selEl, kind){
+  const v=(prompt('Add a new '+(OPT_LABEL[kind]||'value')+':')||'').trim();
+  if(!v){ selEl.value=''; return; }
+  if(!state[kind].includes(v)){ state[kind].push(v); state[kind].sort((a,b)=>a.localeCompare(b)); save(); }
+  selEl.innerHTML=optsFor(state[kind], v)+`<option value="__add">＋ Add new ${OPT_SHORT[kind]}</option>`;
+  selEl.value=v;
+}
+function statusOptions(sel){ return Object.keys(STATUS).map(k=>`<option ${sel===k?'selected':''}>${k}</option>`).join(''); }
+
+/* ---------- add / edit ---------- */
+function machineForm(m, isAdd){
+  const s=m||{status:'In Stock'};
+  return `
+    <div class="grid2">
+      <div class="field"><label>Status <span class="req">*</span></label><select id="f_status">${statusOptions(s.status)}</select></div>
+      <div class="field"><label>PO No.</label><input id="f_pono" value="${esc(s.poNo||'')}" placeholder="Purchase order no."></div>
+    </div>
+    ${isAdd
+      ? `<div class="grid2"><div class="field"><label>Quantity <span class="req">*</span></label><input type="number" id="f_qty" min="1" value="1"><div class="hint">Add several identical units at once — each becomes its own row so you can fill in serials individually.</div></div><div class="field"></div></div>`
+      : ''}
+    <div class="grid2">
+      <div class="field"><label>Brand</label>${brandSelect('f_brand', s.brand)}</div>
+      <div class="field"><label>Model <span class="req">*</span></label>${modelSelect('f_model', s.model)}</div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Serial No.</label><input id="f_serial" value="${esc(s.serial||'')}" placeholder="e.g. GR20241280"></div>
+      <div class="field"><label>Branch</label>${branchSelect('f_branch', s.branch)}</div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Client Name</label><input id="f_client" value="${esc(s.client||'')}"></div>
+      <div class="field"><label>Code</label><input id="f_code" value="${esc(s.clientCode||'')}"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Location</label><input id="f_location" value="${esc(s.location||'')}" placeholder="Client / site location"></div>
+      <div class="field"><label>AE</label>${aeSelect('f_ae', s.ae)}</div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Reservation Date</label><input type="date" id="f_resdate" value="${esc(s.reservationDate||'')}"></div>
+      <div class="field"><label>Delivery Date</label><input type="date" id="f_deldate" value="${esc(s.deliveryDate||'')}"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Shipment Receipt / Transfer Date</label><input type="date" id="f_dispatch" value="${esc(s.dispatchDate||'')}"></div>
+      <div class="field"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="Anything worth remembering about this unit">${esc(s.notes||'')}</textarea></div>`;
+}
+function openAdd(){
+  if(!guard('edit'))return;
+  openModal(`<div class="mhead"><h2>Add Machine</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="banner">Add one unit or a batch. Pick a <b>Status</b> (In Stock, Incoming, etc.) and set <b>Quantity</b> to add several at once. You can reserve and deliver them later with the row buttons.</div>
+      ${machineForm(null, true)}
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveAdd()">Add Machine</button></div>`);
+}
+function collectForm(){
+  return {serial:val('f_serial'),poNo:val('f_pono'),model:val('f_model'),brand:val('f_brand'),
+    status:val('f_status'),branch:val('f_branch'),
+    client:val('f_client'),clientCode:val('f_code'),location:val('f_location'),ae:val('f_ae'),
+    reservationDate:val('f_resdate'),deliveryDate:val('f_deldate'),dispatchDate:val('f_dispatch'),notes:val('f_notes')};
+}
+function saveAdd(){
+  if(!guard('edit'))return;
+  const d=collectForm();
+  if(!d.model){alert('Please enter a Model.');return;}
+  let qty=parseInt(val('f_qty')||'1',10); if(!(qty>=1))qty=1; qty=Math.min(qty,500);
+  for(let i=0;i<qty;i++){
+    const u=Object.assign({},d);
+    if(qty>1) u.serial='';
+    u.id=nextId(); u.updated=nowStamp();
+    u.history=[{t:nowStamp(),e:'Added as '+u.status+(qty>1?` (batch ${i+1} of ${qty})`:'')}];
+    state.machines.push(u);
+  }
+  closeModal(); commit();
+}
+function openEdit(id){
+  if(!guard('edit'))return;
+  const m=findM(id);if(!m)return;
+  const hist=(m.history||[]).slice().reverse().map(h=>`<div class="h"><b>${esc(h.t)}</b> ${esc(h.e)}</div>`).join('')||'<div class="h muted">No history yet.</div>';
+  openModal(`<div class="mhead"><h2>Edit Machine</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">${machineForm(m, false)}
+      <div class="history"><div class="cap" style="font-size:11px;color:var(--text-muted);font-weight:650;text-transform:uppercase;margin-bottom:6px">History</div>${hist}</div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveEdit(${id})">Save Changes</button></div>`);
+}
+function saveEdit(id){
+  if(!guard('edit'))return;
+  const m=findM(id);if(!m)return;
+  const d=collectForm();
+  if(!d.model){alert('Please enter a Model.');return;}
+  const oldStatus=m.status;
+  Object.assign(m,d);
+  touch(m, oldStatus!==d.status?`Status changed: ${oldStatus} → ${d.status} (edit)`:'Details edited');
+  closeModal(); commit();
+}
+
+/* ---------- reserve ---------- */
+function openReserve(id){
+  if(!guard('reserve'))return;
+  const m=findM(id);if(!m)return;
+  openModal(`<div class="mhead"><h2>🔖 Reserve Machine</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="banner"><b>${esc(m.model)}</b> ${m.serial?'· '+esc(m.serial):''} — assign this unit to a client. It moves to <b>Reservations</b>.</div>
+      <div class="grid2">
+        <div class="field"><label>Client Name <span class="req">*</span></label><input id="r_client" value="${esc(m.client||'')}" placeholder="Client / company name"></div>
+        <div class="field"><label>Code</label><input id="r_code" value="${esc(m.clientCode||'')}" placeholder="Short code"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>AE</label>${aeSelect('r_ae', m.ae)}</div>
+        <div class="field"><label>Reservation Date</label><input type="date" id="r_date" value="${m.reservationDate||today()}"></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="doReserve(${id})">Reserve Machine</button></div>`);
+}
+function doReserve(id){
+  if(!guard('reserve'))return;
+  const m=findM(id);if(!m)return;
+  const client=val('r_client'); if(!client){alert('Please enter a client name.');return;}
+  m.status='Reserved'; m.client=client; m.clientCode=val('r_code'); m.ae=val('r_ae');
+  m.reservationDate=val('r_date')||today();
+  touch(m,`Reserved for ${client}`); closeModal(); commit();
+}
+
+/* ---------- deliver ---------- */
+function openDeliver(id){
+  if(!guard('deliver'))return;
+  const m=findM(id);if(!m)return;
+  openModal(`<div class="mhead"><h2>✅ Deliver Machine</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="banner"><b>${esc(m.model)}</b> ${m.serial?'· '+esc(m.serial):''} — record delivery. It moves to <b>Deliveries</b>.</div>
+      <div class="grid2">
+        <div class="field"><label>Brand</label>${brandSelect('d_brand', m.brand)}</div>
+        <div class="field"><label>Model</label>${modelSelect('d_model', m.model)}</div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Client Name <span class="req">*</span></label><input id="d_client" value="${esc(m.client||'')}"></div>
+        <div class="field"><label>Code</label><input id="d_code" value="${esc(m.clientCode||'')}"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>AE</label>${aeSelect('d_ae', m.ae)}</div>
+        <div class="field"><label>Branch</label>${branchSelect('d_branch', m.branch)}</div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Location</label><input id="d_location" value="${esc(m.location||'')}" placeholder="Client / site location"></div>
+        <div class="field"><label>Delivery Date <span class="req">*</span></label><input type="date" id="d_date" value="${m.deliveryDate||today()}"></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="doDeliver(${id})">Mark Delivered</button></div>`);
+}
+function doDeliver(id){
+  if(!guard('deliver'))return;
+  const m=findM(id);if(!m)return;
+  const client=val('d_client'); if(!client){alert('Please enter a client name.');return;}
+  const date=val('d_date'); if(!date){alert('Please enter a delivery date.');return;}
+  m.status='Delivered'; m.brand=val('d_brand'); m.model=val('d_model'); m.client=client; m.clientCode=val('d_code'); m.ae=val('d_ae'); m.branch=val('d_branch'); m.location=val('d_location');
+  m.deliveryDate=date;
+  touch(m,`Delivered to ${client} on ${date}`); closeModal(); commit();
+}
+
+/* ---------- import / export ---------- */
+function doExportJSON(){
+  if(!guard('importBackup'))return;
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ES_machines_backup_'+today()+'.json';a.click();
+}
+function doExportCSV(){
+  const rows=window._rows||state.machines;
+  let head=['Status','PO No.','Brand','Model','Branch','Client Name','Code','Location','AE','Reservation Date','Delivery Date','Serial','Shipment Receipt / Transfer Date','Notes','Updated'];
+  let keys=['status','poNo','brand','model','branch','client','clientCode','location','ae','reservationDate','deliveryDate','serial','dispatchDate','notes','updated'];
+  if(hideClientCols()){ const drop=new Set(['client','location']); const idx=keys.map((k,i)=>drop.has(k)?i:-1).filter(i=>i>=0); keys=keys.filter(k=>!drop.has(k)); head=head.filter((_,i)=>!idx.includes(i)); }
+  const lines=[head.join(',')];
+  rows.forEach(m=>lines.push(keys.map(k=>{ let v=((k==='client'||k==='location')&&!canSeeClient(m.ae))?'•••':(m[k]==null?'':m[k]); return `"${String(v).replace(/"/g,'""')}"`; }).join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const scope=($('fStatus').value||'all').replace(/\s/g,'');
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ES_'+scope+'_'+today()+'.csv';a.click();
+}
+function doImport(){ if(!guard('importBackup'))return; $('importFile').click(); }
+function handleImport(e){
+  if(!guard('importBackup')){ e.target.value=''; return; }
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const obj=JSON.parse(r.result);
+      if(!obj.machines||!Array.isArray(obj.machines))throw new Error('Not a valid backup file.');
+      if(!confirm(`Load ${obj.machines.length} machines from this backup? This replaces the current list.`))return;
+      state=obj; if(!state.seq)state.seq=Math.max(0,...state.machines.map(m=>m.id||0))+1;
+      ensureLists(); ensureRoles(); ensureUsers();
+      if(currentUser){ const still=state.users.find(x=>x.u===currentUser.u); currentUser=still||null; }
+      save(); if(!currentUser){ applyAuth(); } else { applyAuth(); }
+    }catch(err){ alert('Could not read that file: '+err.message); }
+  };
+  r.readAsText(f); e.target.value='';
+}
+
+/* ---------- view switch ---------- */
+function setMainView(v){
+  mainView=v;
+  $('machinesView').style.display=v==='machines'?'block':'none';
+  $('stockView').style.display=v==='stock'?'block':'none';
+  $('tbaView').style.display=v==='tba'?'block':'none';
+  $('vtab-machines').classList.toggle('active',v==='machines');
+  $('vtab-stock').classList.toggle('active',v==='stock');
+  $('vtab-tba').classList.toggle('active',v==='tba');
+  if(v==='stock')buildStock(); else if(v==='tba')buildTBA(); else render();
+}
+function tbaCountFor(brand,model){
+  const nb=s=>(String(s||'').trim());
+  return state.tbaList.filter(t=>(nb(t.brand)||'(no brand)')===brand && (nb(t.model)||'(no model)')===model).length;
+}
+
+/* ---------- stock levels + reorder point ---------- */
+function stockGroups(branch){
+  const g={};
+  state.machines.forEach(m=>{
+    if(branch && (m.branch||'')!==branch) return;
+    const brand=(m.brand||'').trim()||'(no brand)';
+    const model=(m.model||'').trim()||'(no model)';
+    const key=brand+'||'+model;
+    if(!g[key])g[key]={key,brand,model,inStock:0,incoming:0,reserved:0,tba:0,delivered:0,total:0};
+    const r=g[key]; r.total++;
+    if(m.status==='In Stock')r.inStock++;
+    else if(m.status==='Incoming')r.incoming++;
+    else if(m.status==='Reserved')r.reserved++;
+    else if(m.status==='Delivered')r.delivered++;
+  });
+  // In Stock column includes reserved (physically on hand); TBA from the separate TBA list
+  Object.values(g).forEach(r=>{ r.physical=r.inStock+r.reserved; r.tba=tbaCountFor(r.brand,r.model); });
+  return Object.values(g);
+}
+function reorderInfo(r){
+  const rp=parseInt(state.reorder[r.key]||0,10);
+  const onHand=(r.physical!=null?r.physical:r.inStock);
+  if(!(rp>0)) return {rp:0,rank:3,label:'—',cls:'none',color:'var(--text-muted)'};
+  if(onHand<=rp){
+    if(r.incoming>0) return {rp,rank:1,label:`Replenish · ${r.incoming} incoming`,cls:'warn',color:'var(--reserved)'};
+    return {rp,rank:0,label:'⚠ Reorder now',cls:'crit',color:'var(--danger)'};
+  }
+  return {rp,rank:2,label:'OK',cls:'ok',color:'var(--stock)'};
+}
+function buildStock(){
+  // branch filter options (from all machines)
+  const allBranches=[...new Set(state.machines.map(m=>(m.branch||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const curBr=$('sfBranch').value;
+  $('sfBranch').innerHTML='<option value="">All branches</option>'+allBranches.map(b=>`<option>${esc(b)}</option>`).join('');
+  if([...$('sfBranch').options].some(o=>o.value===curBr))$('sfBranch').value=curBr;
+  const branchF=$('sfBranch').value;
+
+  let rows=stockGroups(branchF);
+  // brand filter options
+  const brands=[...new Set(stockGroups(branchF).map(r=>r.brand))].sort((a,b)=>a.localeCompare(b));
+  const curB=$('sfBrand').value;
+  $('sfBrand').innerHTML='<option value="">All brands</option>'+brands.map(b=>`<option>${esc(b)}</option>`).join('');
+  if([...$('sfBrand').options].some(o=>o.value===curB))$('sfBrand').value=curB;
+
+  const q=($('sq').value||'').trim().toLowerCase();
+  if(q)rows=rows.filter(r=>(r.brand+' '+r.model).toLowerCase().includes(q));
+  const fb=$('sfBrand').value; if(fb)rows=rows.filter(r=>r.brand===fb);
+  rows.forEach(r=>r._info=reorderInfo(r));
+  if($('sReorderOnly').checked)rows=rows.filter(r=>r._info.cls==='crit'||r._info.cls==='warn');
+  rows.sort((a,b)=> a._info.rank-b._info.rank || a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
+  stockIndex=rows.map(r=>r.key);
+
+  const cols=['Brand','Model','In Stock','Incoming','Reserved','Available Stock','TBA','Reorder Point','Status'];
+  $('sthead').innerHTML='<tr>'+cols.map((c,i)=>`<th${i>=2&&i<=7?' style="text-align:center"':''}>${c}</th>`).join('')+'</tr>';
+  if(!rows.length){
+    $('stbody').innerHTML=`<tr><td colspan="9"><div class="empty"><div class="big">📦</div>No brand-models to show.</div></td></tr>`;
+  } else {
+    const z='<span class="muted">0</span>';
+    $('stbody').innerHTML=rows.map((r,i)=>{
+      const info=r._info;
+      const net=r.physical+r.incoming-r.reserved;
+      const netColor = net<0?'var(--danger)':'var(--text-primary)';
+      const tbaCell = r.tba
+        ? `<button class="link-btn" onclick="openTBAReport(${i})" title="View TBA reservations for ${esc(r.brand)} ${esc(r.model)}">${r.tba} ↗</button>`
+        : z;
+      return `<tr class="rp-${info.cls}">
+        <td class="strong">${esc(r.brand)}</td>
+        <td class="strong">${esc(r.model)}</td>
+        <td style="text-align:center"><span class="big-num" style="color:${info.cls==='crit'?'var(--danger)':info.cls==='warn'?'var(--reserved)':'var(--text-primary)'}">${r.physical}</span></td>
+        <td style="text-align:center">${r.incoming||z}</td>
+        <td style="text-align:center">${r.reserved||z}</td>
+        <td style="text-align:center"><span class="big-num" style="color:${netColor}">${net}</span></td>
+        <td style="text-align:center">${tbaCell}</td>
+        <td style="text-align:center"><input type="number" min="0" class="rp-input" value="${info.rp||''}" placeholder="—" ${perms().edit?'':'disabled'} onchange="setReorder(${i},this.value)" title="Minimum in-stock level before you reorder"></td>
+        <td><span class="pill" style="background:color-mix(in srgb, ${info.color} 15%, transparent);color:${info.color}">${info.label}</span></td>
+      </tr>`;
+    }).join('');
+  }
+  const allInfo=stockGroups(branchF).map(reorderInfo);
+  const need=allInfo.filter(x=>x.cls==='crit'||x.cls==='warn').length;
+  const crit=allInfo.filter(x=>x.cls==='crit').length;
+  window._stockRows=rows;
+  $('src').textContent=rows.length+' brand-models';
+  $('reorderNote').innerHTML = need
+    ? `<span class="pill" style="background:${hexA('#e34948',.14)};color:var(--danger)">⚠ ${need} to replenish</span> ${crit} need reorder now${need>crit?`, ${need-crit} already have stock incoming`:''}. <b>In Stock</b> counts units physically on hand (including reserved). <b>Available Stock</b> = In Stock + Incoming − Reserved.`
+    : `<b>In Stock</b> counts units physically on hand (including reserved). <b>Available Stock</b> = In Stock + Incoming − Reserved. Set a <b>Reorder Point</b> per brand-model to flag low stock.`;
+}
+function openTBAReport(i){
+  const key=stockIndex[i]; if(!key)return;
+  const parts=key.split('||'), brand=parts[0], model=parts[1];
+  const nb=s=>(String(s||'').trim());
+  const recs=state.tbaList.filter(t=>(nb(t.brand)||'(no brand)')===brand && (nb(t.model)||'(no model)')===model);
+  const d='<span class="muted">—</span>', mask='<span class="muted">•••</span>';
+  const hc=hideClientCols();
+  const nCols=hc?3:5;
+  const body = recs.length ? recs.map(t=>{
+    const see=canSeeClient(t.ae);
+    return `<tr>
+      ${hc?'':`<td class="strong">${see?(esc(t.client||'')||d):mask}</td>`}
+      <td>${esc(t.clientCode||'')||d}</td>
+      <td>${esc(t.ae||'')||d}</td>
+      <td style="white-space:nowrap">${esc(t.reservationDate||'')||d}</td>
+      ${hc?'':`<td>${see?(esc(t.location||'')||d):mask}</td>`}
+    </tr>`;}).join('') : `<tr><td colspan="${nCols}" class="muted" style="text-align:center;padding:22px">No TBA reservations for this brand-model.</td></tr>`;
+  openModal(`<div class="mhead"><h2>📝 TBA Reservations — ${esc(brand)} ${esc(model)}</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="banner"><b>${recs.length}</b> TBA reservation(s) for <b>${esc(brand)} ${esc(model)}</b> — waiting to be allotted a unit. No inventory is held against these.</div>
+      <div class="table-scroll" style="max-height:52vh;border:1px solid var(--border);border-radius:10px">
+        <table>
+          <thead><tr>${hc?'':'<th>Client</th>'}<th>Code</th><th>AE</th><th>Res. Date</th>${hc?'':'<th>Location</th>'}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="closeModal();setMainView('tba')">Open TBA List</button></div>`);
+}
+function setReorder(i,val){
+  if(!guard('edit'))return;
+  const key=stockIndex[i]; if(!key)return;
+  const n=parseInt(val,10);
+  if(n>0)state.reorder[key]=n; else delete state.reorder[key];
+  save(); buildStock();
+}
+function exportStockCSV(){
+  let rows=stockGroups(); rows.forEach(r=>r._info=reorderInfo(r));
+  rows.sort((a,b)=> a._info.rank-b._info.rank || a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
+  const head=['Brand','Model','In Stock','Incoming','Reserved','Available Stock','TBA','Reorder Point','Status'];
+  const lines=[head.join(',')];
+  rows.forEach(r=>lines.push([r.brand,r.model,r.physical,r.incoming,r.reserved,(r.physical+r.incoming-r.reserved),r.tba,r._info.rp||'',r._info.label.replace(/[⚠·↗]/g,'').trim()]
+    .map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ES_StockLevels_'+today()+'.csv';a.click();
+}
+
+/* ---------- TBA list tab ---------- */
+function buildTBA(){
+  const pm=perms(), hc=hideClientCols();
+  $('btnAddTBA').style.display=pm.reserve?'':'none';
+  const fillT=(id,key,lbl)=>{const cur=$(id).value;
+    const opts=[...new Set(state.tbaList.map(t=>(t[key]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    $(id).innerHTML=`<option value="">All ${lbl}</option>`+opts.map(o=>`<option>${esc(o)}</option>`).join('');
+    if([...$(id).options].some(o=>o.value===cur))$(id).value=cur;};
+  fillT('tfBrand','brand','brands'); fillT('tfModel','model','models'); fillT('tfAE','ae','AEs');
+  let rows=state.tbaList.slice();
+  const q=($('tq').value||'').trim().toLowerCase();
+  if(q)rows=rows.filter(t=>[t.brand,t.model,t.client,t.clientCode,t.ae,t.location].some(v=>String(v||'').toLowerCase().includes(q)));
+  const fb=$('tfBrand').value, fm=$('tfModel').value, fa=$('tfAE').value;
+  if(fb)rows=rows.filter(t=>t.brand===fb);
+  if(fm)rows=rows.filter(t=>t.model===fm);
+  if(fa)rows=rows.filter(t=>t.ae===fa);
+  rows.sort((a,b)=>(a.brand||'').localeCompare(b.brand||'')||(a.model||'').localeCompare(b.model||''));
+
+  let cols=[{k:'brand',t:'Brand'},{k:'model',t:'Model'},{k:'client',t:'Client Name'},{k:'clientCode',t:'Code'},{k:'location',t:'Location'},{k:'ae',t:'AE'},{k:'reservationDate',t:'Reservation Date'},{k:'notes',t:'Notes'}];
+  if(hc) cols=cols.filter(c=>c.k!=='client'&&c.k!=='location');
+  const showActions=pm.reserve;
+  $('tthead').innerHTML='<tr>'+cols.map(c=>`<th>${c.t}</th>`).join('')+(showActions?'<th style="text-align:right">Actions</th>':'')+'</tr>';
+  const d='<span class="muted">—</span>';
+  if(!rows.length){
+    $('ttbody').innerHTML=`<tr><td colspan="${cols.length+1}"><div class="empty"><div class="big">📝</div>No TBA reservations.${pm.reserve?'<br><button class="btn primary sm" style="margin-top:12px" onclick="openTBAForm(-1)">＋ Add a TBA reservation</button>':''}</div></td></tr>`;
+  } else {
+    $('ttbody').innerHTML=rows.map(t=>{
+      const idx=state.tbaList.indexOf(t);
+      const see=canSeeClient(t.ae);
+      const cell=c=>{ const v=t[c.k];
+        if((c.k==='client'||c.k==='location')&&!see)return '<td><span class="muted">•••</span></td>';
+        if(c.k==='brand'||c.k==='model'||c.k==='client')return `<td class="strong">${v?esc(v):d}</td>`;
+        if(c.k==='notes')return `<td class="muted note-cell"${v?` title="${esc(v)}"`:''}>${v?esc(v):''}</td>`;
+        return `<td style="white-space:nowrap">${v?esc(v):d}</td>`;
+      };
+      const acts=`<div class="actions">
+        <button class="btn sm" title="Allot an available in-stock unit &amp; reserve it" onclick="fulfillTBA(${idx})">📦 Fulfil</button>
+        <button class="btn sm ghost" title="Edit" onclick="openTBAForm(${idx})">✎</button>
+        <button class="btn sm ghost danger" title="Delete" onclick="deleteTBA(${idx})">🗑</button></div>`;
+      return `<tr class="st-tba">${cols.map(cell).join('')}${showActions?`<td>${acts}</td>`:''}</tr>`;
+    }).join('');
+  }
+  $('trc').textContent=rows.length+' of '+state.tbaList.length+' reservations';
+  $('tbaNote').innerHTML='TBA reservations are client demands <b>not allotted to any unit</b> — inventory stays available. Use <b>📦 Fulfil</b> when stock is on hand to reserve an available unit for the client.';
+  window._tbaRows=rows;
+}
+function openTBAForm(i){
+  if(!guard('reserve'))return;
+  const t = i>=0?state.tbaList[i]:{brand:'',model:'',client:'',clientCode:'',ae:'',reservationDate:today(),location:'',notes:''};
+  openModal(`<div class="mhead"><h2>${i>=0?'Edit':'Add'} TBA Reservation</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="banner">A TBA reservation records a client's demand without holding a unit. Fulfil it later when stock is available.</div>
+      <div class="grid2">
+        <div class="field"><label>Brand</label>${brandSelect('t_brand', t.brand)}</div>
+        <div class="field"><label>Model <span class="req">*</span></label>${modelSelect('t_model', t.model)}</div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Client Name <span class="req">*</span></label><input id="t_client" value="${esc(t.client||'')}"></div>
+        <div class="field"><label>Code</label><input id="t_code" value="${esc(t.clientCode||'')}"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>AE</label>${aeSelect('t_ae', t.ae)}</div>
+        <div class="field"><label>Reservation Date</label><input type="date" id="t_date" value="${esc(t.reservationDate||today())}"></div>
+      </div>
+      <div class="field"><label>Location</label><input id="t_location" value="${esc(t.location||'')}" placeholder="Client / site location"></div>
+      <div class="field"><label>Notes</label><textarea id="t_notes">${esc(t.notes||'')}</textarea></div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveTBA(${i})">Save</button></div>`);
+}
+function saveTBA(i){
+  if(!guard('reserve'))return;
+  const rec={brand:val('t_brand'),model:val('t_model'),client:val('t_client'),clientCode:val('t_code'),
+    ae:val('t_ae'),reservationDate:val('t_date')||today(),location:val('t_location'),notes:val('t_notes')};
+  if(!rec.model){alert('Please enter a Model.');return;}
+  if(!rec.client){alert('Please enter a Client Name.');return;}
+  if(i>=0){ Object.assign(state.tbaList[i],rec); }
+  else { rec.id=nextId(); rec.created=nowStamp(); state.tbaList.push(rec); }
+  save(); closeModal(); buildTBA();
+}
+function deleteTBA(i){
+  if(!guard('reserve'))return;
+  const t=state.tbaList[i]; if(!t)return;
+  if(!confirm(`Delete TBA reservation for ${t.client||'—'} (${t.brand} ${t.model})?`))return;
+  state.tbaList.splice(i,1); save(); buildTBA();
+}
+function fulfillTBA(i){
+  if(!guard('reserve'))return;
+  const t=state.tbaList[i]; if(!t)return;
+  const nb=s=>String(s||'').trim();
+  const unit=state.machines.find(m=>m.status==='In Stock' && nb(m.brand)===nb(t.brand) && nb(m.model)===nb(t.model));
+  if(!unit){ alert(`No available In Stock unit of ${t.brand} ${t.model} to allot. Add stock first, then fulfil.`); return; }
+  if(!confirm(`Allot in-stock unit ${unit.serial||'(no serial)'} to ${t.client} and reserve it?`))return;
+  unit.status='Reserved'; unit.client=t.client; unit.clientCode=t.clientCode; unit.ae=t.ae;
+  unit.reservationDate=t.reservationDate||today(); if(t.location)unit.location=t.location;
+  touch(unit,`Reserved for ${t.client} — fulfilled from TBA list`);
+  state.tbaList.splice(i,1); save(); buildTBA();
+  alert(`Reserved ${unit.serial||'a unit'} for ${t.client}. It's now under Reservations on the Machines tab.`);
+}
+function exportTBACSV(){
+  const rows=window._tbaRows||state.tbaList;
+  let head=['Brand','Model','Client Name','Code','Location','AE','Reservation Date','Notes'];
+  let keys=['brand','model','client','clientCode','location','ae','reservationDate','notes'];
+  if(hideClientCols()){ const drop=new Set(['client','location']); const idx=keys.map((k,j)=>drop.has(k)?j:-1).filter(j=>j>=0); keys=keys.filter(k=>!drop.has(k)); head=head.filter((_,j)=>!idx.includes(j)); }
+  const lines=[head.join(',')];
+  rows.forEach(t=>lines.push(keys.map(k=>{ let v=((k==='client'||k==='location')&&!canSeeClient(t.ae))?'•••':(t[k]==null?'':t[k]); return `"${String(v).replace(/"/g,'""')}"`; }).join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ES_TBA_'+today()+'.csv';a.click();
+}
+
+/* ---------- theme ---------- */
+function toggleTheme(){
+  const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  $('themeBtn').textContent=d?'🌙':'☀';
+}
+
+/* ---------- lists ---------- */
+function ensureLists(){
+  if(!Array.isArray(state.branches))state.branches=[];
+  if(!Array.isArray(state.aes))state.aes=[];
+  if(!Array.isArray(state.brands))state.brands=[];
+  if(!Array.isArray(state.models))state.models=[];
+  if(!state.reorder||typeof state.reorder!=='object')state.reorder={};
+  if(!Array.isArray(state.tbaList))state.tbaList=[];
+  // migrate: TBA is now a SEPARATE list of reservations, not tied to any unit.
+  state.machines.forEach(m=>{
+    if(m.status==='TBA'){ m.status='In Stock'; m.tba=true; }        // legacy status → flag (then converted below)
+    if(m.tba){
+      state.tbaList.push({id:nextId(),brand:m.brand||'',model:m.model||'',client:m.client||'',clientCode:m.clientCode||'',
+        ae:m.ae||'',reservationDate:m.reservationDate||'',location:m.location||'',notes:m.notes||'',created:m.updated||nowStamp()});
+      m.tba=false; m.client=''; m.clientCode=''; m.ae=''; m.reservationDate='';   // unit freed — no reservation on record
+    }
+    delete m.tba;
+  });
+  const push=(list,v)=>{ v=(v||'').trim(); if(v && !list.includes(v)) list.push(v); };
+  SEED_BRANCHES.forEach(v=>push(state.branches,v)); SEED_AES.forEach(v=>push(state.aes,v));
+  state.machines.forEach(m=>{ push(state.branches,m.branch); push(state.aes,m.ae); push(state.brands,m.brand); push(state.models,m.model); });
+  [state.branches,state.aes,state.brands,state.models].forEach(l=>l.sort((a,b)=>a.localeCompare(b)));
+}
+function ensureUsers(){ if(!Array.isArray(state.users)||!state.users.length){ state.users=seedUsers(); } }
+function ensureRoles(){
+  if(!Array.isArray(state.roles)||!state.roles.length){ state.roles=JSON.parse(JSON.stringify(DEFAULT_ROLES)); }
+  // one-time permission revision: Sales Admin / ASM / Team Leader / AE become view-only with client hidden
+  if((state.rolesRev||0) < ROLES_REV){
+    const viewOnlyHidden={sales_admin:1,asm:1,team_leader:1,account_exec:1};
+    state.roles.forEach(r=>{ if(viewOnlyHidden[r.key]) r.perms={viewClient:false}; });
+    state.rolesRev=ROLES_REV;
+  }
+}
+function roleLabel(k){ const r=roleByKey(k); return r?r.label:k; }
+function slugify(s){ return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'role'; }
+function permSummary(perms){
+  const tags=PERM_DEFS.filter(d=>d.k!=='viewClient').filter(d=>perms[d.k]).map(d=>d.label);
+  if(perms.viewClient===false) tags.push('⊘ client hidden');
+  return tags.length?tags:['View only'];
+}
+
+/* ---------- admin: roles + users ---------- */
+function openAdmin(tab){
+  if(!perms().manageUsers)return;
+  tab=tab||'roles';
+  const tabs=`<div class="viewnav" style="margin:0 0 14px">
+     <button class="vtab ${tab==='roles'?'active':''}" onclick="openAdmin('roles')">🛡️ Roles</button>
+     <button class="vtab ${tab==='users'?'active':''}" onclick="openAdmin('users')">👤 Users</button>
+   </div>`;
+  let body;
+  if(tab==='roles'){
+    const rows=state.roles.map((r,i)=>{
+      const nUsers=state.users.filter(u=>u.r===r.key).length;
+      const tags=permSummary(r.perms).map(t=>`<span class="perm-tag">${esc(t)}</span>`).join(' ');
+      return `<tr>
+        <td class="strong">${esc(r.label)}</td>
+        <td>${tags}</td>
+        <td style="text-align:center">${nUsers}</td>
+        <td><div class="actions"><button class="btn sm ghost" title="Edit role" onclick="openRoleForm(${i})">✎</button><button class="btn sm ghost danger" title="Delete role" onclick="deleteRole(${i})">🗑</button></div></td>
+      </tr>`;
+    }).join('');
+    body=`<div class="banner">Define what each role can do, then assign people to roles under the <b>Users</b> tab. Uncheck <b>See client name &amp; location</b> to hide those from a role (e.g. Account Executives).</div>
+      <div class="table-card"><div class="table-scroll" style="max-height:44vh"><table>
+        <thead><tr><th>Role</th><th>Permissions</th><th style="text-align:center">Users</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+    body=tabs+body;
+    openModal(`<div class="mhead"><h2>Access Control</h2><button class="x" onclick="closeModal()">×</button></div>
+      <div class="mbody">${body}</div>
+      <div class="mfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openRoleForm(-1)">＋ Add Role</button></div>`);
+  } else {
+    const rows=state.users.map((usr,i)=>{
+      const rl=roleByKey(usr.r);
+      let aeAccess = (rl&&rl.perms&&rl.perms.viewClient) ? 'All clients'
+        : [...(usr.ae?[usr.ae]:[]),...(usr.approvedAEs||[])].filter(Boolean).join(', ') || '—';
+      return `<tr>
+       <td class="mono strong">${esc(usr.u)}</td>
+       <td>${esc(usr.n||'')||'<span class="muted">—</span>'}</td>
+       <td><span class="pill" style="background:var(--surface-2);color:var(--text-secondary)">${esc(roleLabel(usr.r))}</span></td>
+       <td class="muted" style="font-size:11.5px">${esc(aeAccess)}</td>
+       <td><div class="actions"><button class="btn sm ghost" title="Edit" onclick="openUserForm(${i})">✎</button><button class="btn sm ghost danger" title="Delete" onclick="deleteUser(${i})">🗑</button></div></td>
+     </tr>`;}).join('');
+    body=tabs+`<div class="banner">Each person signs in with their own username &amp; password, assigned one <b>Role</b> (what they can do) plus <b>AE access</b> (whose client names they can see — set on each user).</div>
+      <div class="table-card"><div class="table-scroll" style="max-height:44vh"><table>
+        <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Client access (AEs)</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+    openModal(`<div class="mhead"><h2>Access Control</h2><button class="x" onclick="closeModal()">×</button></div>
+      <div class="mbody">${body}</div>
+      <div class="mfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openUserForm(-1)">＋ Add User</button></div>`);
+  }
+}
+function openUsers(){ openAdmin('roles'); }
+
+/* ----- roles ----- */
+function openRoleForm(i){
+  if(!perms().manageUsers)return;
+  const r = i>=0?state.roles[i]:{key:'',label:'',perms:{viewClient:true}};
+  const checks=PERM_DEFS.map(d=>`
+    <label class="perm-row"><input type="checkbox" id="rp_${d.k}" ${r.perms[d.k]?'checked':''}>
+      <span><b>${d.label}</b><br><span class="muted" style="font-size:11px">${d.hint}</span></span></label>`).join('');
+  openModal(`<div class="mhead"><h2>${i>=0?'Edit':'Add'} Role</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="field"><label>Role Name <span class="req">*</span></label><input id="r_label" value="${esc(r.label)}" placeholder="e.g. Warehouse Staff"></div>
+      <div class="field"><label>Permissions</label><div class="perm-list">${checks}</div></div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="openAdmin('roles')">Back</button><button class="btn primary" onclick="saveRole(${i})">Save Role</button></div>`);
+}
+function saveRole(i){
+  if(!perms().manageUsers)return;
+  const label=val('r_label'); if(!label){alert('Please enter a role name.');return;}
+  const p={}; PERM_DEFS.forEach(d=>{ p[d.k]=$('rp_'+d.k).checked; });
+  if(i>=0){
+    state.roles[i].label=label; state.roles[i].perms=p;
+  } else {
+    let key=slugify(label), base=key, n=2;
+    while(state.roles.some(r=>r.key===key)) key=base+'_'+(n++);
+    state.roles.push({key,label,perms:p});
+  }
+  save(); if(currentUser){const me=state.users.find(x=>x.u===currentUser.u); if(me)currentUser=me;} applyAuth(); openAdmin('roles');
+}
+function deleteRole(i){
+  if(!perms().manageUsers)return;
+  const r=state.roles[i]; if(!r)return;
+  const inUse=state.users.filter(u=>u.r===r.key).length;
+  if(inUse){alert(`Cannot delete "${r.label}" — ${inUse} user(s) are assigned to it. Reassign them first.`);return;}
+  if(r.perms.manageUsers && state.roles.filter(x=>x.perms.manageUsers).length<=1){alert('Cannot delete the last role that can manage users & roles.');return;}
+  if(!confirm(`Delete role "${r.label}"?`))return;
+  state.roles.splice(i,1); save(); openAdmin('roles');
+}
+
+/* ----- users ----- */
+function openUserForm(i){
+  if(!perms().manageUsers)return;
+  const usr = i>=0?state.users[i]:{u:'',n:'',r:(state.roles[0]&&state.roles[0].key)||''};
+  const roleOpts=state.roles.map(r=>`<option value="${esc(r.key)}" ${usr.r===r.key?'selected':''}>${esc(r.label)}</option>`).join('');
+  const aeOpts='<option value="">— none —</option>'+state.aes.map(a=>`<option ${usr.ae===a?'selected':''}>${esc(a)}</option>`).join('');
+  const approved=usr.approvedAEs||[];
+  const apprOpts=state.aes.map(a=>`<option ${approved.includes(a)?'selected':''}>${esc(a)}</option>`).join('');
+  openModal(`<div class="mhead"><h2>${i>=0?'Edit':'Add'} User</h2><button class="x" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="grid2">
+        <div class="field"><label>Username <span class="req">*</span></label><input id="u_user" value="${esc(usr.u)}" ${i>=0?'readonly':''} placeholder="e.g. jdoe"></div>
+        <div class="field"><label>Display Name</label><input id="u_name" value="${esc(usr.n||'')}" placeholder="Full name"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Role <span class="req">*</span></label><select id="u_role">${roleOpts}</select></div>
+        <div class="field"><label>Password ${i>=0?'<span class="muted">(blank = keep)</span>':'<span class="req">*</span>'}</label><input id="u_pass" type="password" autocomplete="new-password" placeholder="${i>=0?'••••••':'Set a password'}"></div>
+      </div>
+      <div class="banner">Client-name visibility is by <b>AE</b>. Set an <b>Own AE code</b> for an Account Executive (they'll see only their own clients), or pick <b>Approved AEs</b> for a Manager / Team Leader (they'll see those AEs' clients). Full-access roles see all clients regardless.</div>
+      <div class="grid2">
+        <div class="field"><label>Own AE code</label><select id="u_ae">${aeOpts}</select><div class="hint">For Account Executives — their own AE.</div></div>
+        <div class="field"><label>Approved AEs</label><select id="u_approved" multiple size="4" style="height:auto">${apprOpts}</select><div class="hint">For Managers / Team Leaders — Ctrl/Cmd-click to select multiple.</div></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="openAdmin('users')">Back</button><button class="btn primary" onclick="saveUser(${i})">Save User</button></div>`);
+}
+function saveUser(i){
+  if(!perms().manageUsers)return;
+  const u=val('u_user'); if(!u){alert('Username is required.');return;}
+  const name=val('u_name'), role=val('u_role'), pass=$('u_pass').value;
+  const ae=val('u_ae');
+  const approvedAEs=$('u_approved')?[...$('u_approved').selectedOptions].map(o=>o.value):[];
+  if(i>=0){
+    const usr=state.users[i]; usr.n=name; usr.r=role; usr.ae=ae; usr.approvedAEs=approvedAEs; if(pass)usr.h=hashPass(pass);
+  } else {
+    if(state.users.some(x=>x.u.toLowerCase()===u.toLowerCase())){alert('That username already exists.');return;}
+    if(!pass){alert('Please set a password for the new user.');return;}
+    state.users.push({u,n:name,r:role,h:hashPass(pass),ae,approvedAEs});
+  }
+  save(); if(currentUser){const me=state.users.find(x=>x.u===currentUser.u); if(me)currentUser=me;} applyAuth(); openAdmin('users');
+}
+function deleteUser(i){
+  if(!perms().manageUsers)return;
+  const usr=state.users[i]; if(!usr)return;
+  if(currentUser && usr.u===currentUser.u){alert('You cannot delete the account you are signed in with.');return;}
+  const adminRoles=new Set(state.roles.filter(r=>r.perms.manageUsers).map(r=>r.key));
+  if(adminRoles.has(usr.r) && state.users.filter(x=>adminRoles.has(x.r)).length<=1){alert('Cannot delete the last user who can manage users & roles.');return;}
+  if(!confirm('Delete user "'+usr.u+'"?'))return;
+  state.users.splice(i,1); save(); openAdmin('users');
+}
+
+/* ---------- init ---------- */
+function init(){
+  if(!load()){ state=seed(); save(); }
+  if(!state.seq)state.seq=Math.max(0,...state.machines.map(m=>m.id||0))+1;
+  ensureLists(); ensureRoles(); ensureUsers(); save();
+  $('loginHint').innerHTML='Demo logins — <b>admin</b>/admin123 (full), <b>salesadmin</b>/sales123, <b>asm</b>/asm123, <b>tl</b>/tl123, <b>ae</b>/ae123. Change these in 👤 Users after signing in as admin.';
+  const sess=(function(){try{return localStorage.getItem(SESSION_KEY);}catch(e){return null;}})();
+  if(sess){ const u=state.users.find(x=>x.u===sess); if(u)currentUser=u; }
+  applyAuth();
+  $('foot').innerHTML=`ES Print Group of Companies · Machine Monitoring System${storageOK?' · auto-saves in this browser':' · use Backup to save your data'} · use 💾 Backup regularly to keep a copy you own.`;
+}
+init();
+</script>
+</body>
+</html>
