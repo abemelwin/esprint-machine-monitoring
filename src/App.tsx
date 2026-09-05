@@ -175,7 +175,10 @@ export default function App() {
 
       {/* Views */}
       <div className="mt-3.5">
-        {view === 'machines' && <MachinesView addOpen={addOpen} setAddOpen={setAddOpen} />}
+        {/* Always keep MachinesView mounted so addOpen prop works from any tab */}
+        <div style={{ display: view === 'machines' ? 'block' : 'none' }}>
+          <MachinesView addOpen={addOpen} setAddOpen={setAddOpen} />
+        </div>
         {view === 'stock'    && <StockView />}
         {view === 'tba'      && <TBAView />}
       </div>
