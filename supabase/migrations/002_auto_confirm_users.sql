@@ -5,8 +5,7 @@
 
 -- 1. Confirm any existing users that are unconfirmed
 update auth.users
-set email_confirmed_at = coalesce(email_confirmed_at, now()),
-    confirmed_at = coalesce(confirmed_at, now())
+set email_confirmed_at = coalesce(email_confirmed_at, now())
 where email_confirmed_at is null;
 
 -- 2. Create function to automatically confirm all new users on signup
@@ -17,7 +16,6 @@ security definer
 as $$
 begin
   new.email_confirmed_at := coalesce(new.email_confirmed_at, now());
-  new.confirmed_at := coalesce(new.confirmed_at, now());
   return new;
 end;
 $$;
