@@ -210,13 +210,15 @@ function UsersTab() {
           roles={roles}
           aes={lookups?.aes ?? []}
           onClose={() => setEditTarget(null)}
-          onSave={data => {
+          onSave={async data => {
             if (editTarget === 'new') {
-              createUser.mutate(data as Parameters<typeof createUser.mutate>[0], { onSuccess: () => setEditTarget(null) })
+              await createUser.mutateAsync(data as Parameters<typeof createUser.mutate>[0])
             } else {
-              updateUser.mutate({ id: (editTarget as UserProfileWithRole).id, ...data }, { onSuccess: () => setEditTarget(null) })
+              await updateUser.mutateAsync({ id: (editTarget as UserProfileWithRole).id, ...data })
             }
-          }}          loading={createUser.isPending || updateUser.isPending}
+            setEditTarget(null)
+          }}
+          loading={createUser.isPending || updateUser.isPending}
         />
       )}
     </>
@@ -227,7 +229,7 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
   user: UserProfileWithRole | null
   roles: Role[]; aes: string[]
   onClose: () => void
-  onSave: (data: { email: string; display_name: string; role_key: string; password: string; ae_code: string | null; approved_aes: string[] }) => void
+  onSave: (data: { email: string; display_name: string; role_key: string; password: string; ae_code: string | null; approved_aes: string[] }) => Promise<void>
   loading: boolean
 }) {
   const isEdit = !!user
@@ -241,11 +243,25 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
 
   const toggleAE = (ae: string) => setApprovedAEs(prev => prev.includes(ae) ? prev.filter(a => a !== ae) : [...prev, ae])
 
-  const handleSave = () => {
-    if (!email.trim())        { setErr('Please enter an email.'); return }
-    if (!isEdit && !password) { setErr('Please set a password.'); return }
+  const handleSave = async () => {
+    if (!email.trim()) {
+      setErr('Please enter an email.')
+      return
+    }
+    if (!isEdit && !password) {
+      setErr('Please set a password.')
+      return
+    }
+    if (!isEdit && password.length < 6) {
+      setErr('Password must be at least 6 characters.')
+      return
+    }
     setErr('')
-    onSave({ email, display_name: displayName, role_key: roleKey, password, ae_code: aeCode || null, approved_aes: approvedAEs })
+    try {
+      await onSave({ email, display_name: displayName, role_key: roleKey, password, ae_code: aeCode || null, approved_aes: approvedAEs })
+    } catch (e: any) {
+      setErr(e?.message || 'Failed to save user.')
+    }
   }
 
   return (
