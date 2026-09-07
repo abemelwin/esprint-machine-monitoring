@@ -13,7 +13,15 @@ export function LoginPage() {
     setLoading(true); setError('')
     const err = await login(email, password)
     setLoading(false)
-    if (err) setError('Invalid email or password.')
+    if (err) {
+      if (err.toLowerCase().includes('email not confirmed')) {
+        setError('Email is not confirmed yet. Run the auto-confirm SQL in Supabase.')
+      } else if (err.toLowerCase().includes('invalid login credentials')) {
+        setError('Invalid email or password.')
+      } else {
+        setError(err)
+      }
+    }
   }
 
   const onKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleLogin() }
