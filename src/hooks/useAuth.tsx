@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import { useQueryClient } from '@tanstack/react-query'
 import type { UserProfileWithRole } from '../types/database'
 
 interface AuthState {
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthState>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfileWithRole | null>(null)
   const [loading, setLoading] = useState(true)
+  const qc = useQueryClient()
 
   const loadProfile = useCallback(async (uid: string) => {
     const { data, error } = await supabase
@@ -42,8 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      if (session?.user) loadProfile(session.user.id)
-      else setUser(null)
+      if (session?.user) {
+        loadProfile(session.user.id).finally(() => {
+          qc.invalidateQueries()
+          setLoading(false)
+        })
+      } else { setUser(null); setLoading(false) }
     })
     return () => subscription.unsubscribe()
   }, [loadProfile])
