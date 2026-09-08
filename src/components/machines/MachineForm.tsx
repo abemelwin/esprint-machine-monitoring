@@ -67,7 +67,7 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
     if (!form.po_no.trim())     { setErr('PO No. is required.'); return }
     if (!form.brand)            { setErr('Brand is required.'); return }
     if (!form.model.trim())     { setErr('Model is required.'); return }
-    if (!form.serial_no.trim()) { setErr('Serial No. is required.'); return }
+
     if (!form.branch)           { setErr('Branch is required.'); return }
     setErr('')
     onSubmit(form, isAdd ? Math.max(1, Math.min(qty, 500)) : 1)
@@ -111,7 +111,7 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
       </Grid2>
 
       <Grid2>
-        <Field label="Serial No." required>
+        <Field label="Serial No.">
           <Input value={form.serial_no} onChange={onChange('serial_no')} placeholder="e.g. GR20241280" />
         </Field>
         <Field label="Branch" required>
