@@ -8,21 +8,22 @@ import type { Machine } from '../../types/database'
 interface Props {
   machine: Machine | null
   onClose: () => void
-  onConfirm: (data: { client_name: string; client_code: string; ae: string; reservation_date: string }) => void
+  onConfirm: (data: { client_name: string; client_code: string; ae: string; reservation_date: string; location: string }) => void
   loading?: boolean
 }
 
 export function ReserveModal({ machine, onClose, onConfirm, loading }: Props) {
-  const [client, setClient] = useState(machine?.client_name ?? '')
-  const [code, setCode]     = useState(machine?.client_code ?? '')
-  const [ae, setAe]         = useState(machine?.ae ?? '')
-  const [date, setDate]     = useState(machine?.reservation_date ?? today())
-  const [err, setErr]       = useState('')
+  const [client,   setClient]   = useState(machine?.client_name ?? '')
+  const [code,     setCode]     = useState(machine?.client_code ?? '')
+  const [ae,       setAe]       = useState(machine?.ae ?? '')
+  const [date,     setDate]     = useState(machine?.reservation_date ?? today())
+  const [location, setLocation] = useState(machine?.location ?? '')
+  const [err,      setErr]      = useState('')
 
   const handleConfirm = () => {
     if (!client.trim()) { setErr('Please enter a client name.'); return }
     setErr('')
-    onConfirm({ client_name: client, client_code: code, ae, reservation_date: date || today() })
+    onConfirm({ client_name: client, client_code: code, ae, reservation_date: date || today(), location })
   }
 
   return (
@@ -52,6 +53,9 @@ export function ReserveModal({ machine, onClose, onConfirm, loading }: Props) {
             <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
           </Field>
         </Grid2>
+        <Field label="Location">
+          <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Client / site location" />
+        </Field>
         {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
       </div>
     </Modal>

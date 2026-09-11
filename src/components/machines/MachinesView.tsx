@@ -93,12 +93,12 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     }, { onError: onMutationError })
   }
 
-  const doReserve = (m: Machine, data: { client_name: string; client_code: string; ae: string; reservation_date: string }) => {
+  const doReserve = (m: Machine, data: { client_name: string; client_code: string; ae: string; reservation_date: string; location: string }) => {
     updateMachine.mutate({
       id: m.id,
       updates: { status: 'Reserved', ...data },
       event: `Reserved for ${data.client_name}`,
-      requireStatus: m.status, // must still be In Stock / Demo / Recertified
+      requireStatus: m.status,
     }, { onSuccess: () => setReserveTarget(null), onError: (err) => { setReserveTarget(null); onMutationError(err) } })
   }
 
