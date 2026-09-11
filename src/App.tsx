@@ -27,8 +27,9 @@ export default function App() {
   const [adminOpen,  setAdminOpen]  = useState(false)
   const [addOpen,    setAddOpen]    = useState(false)
   const [theme,      setTheme]      = useState<'light' | 'dark'>('light')
-  const [savedAt,    setSavedAt]    = useState('')
+  const [, setSavedAt]              = useState('')
   const [newVersion, setNewVersion] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Detect new deploy — check version every 5 minutes
   useEffect(() => {
@@ -120,37 +121,32 @@ export default function App() {
   ]
 
   return (
-    <div className="w-full max-w-full p-3.5 px-4">
+    <div className="w-full max-w-full p-3 md:p-3.5 md:px-4">
       {/* Update banner */}
       {newVersion && (
         <div className="flex items-center justify-between gap-3 bg-[var(--accent)] text-white px-4 py-2.5 rounded-[9px] mb-3 text-[13px]">
           <span>🎉 A new version of the app is available.</span>
-          <button
-            className="bg-white text-[var(--accent)] font-[650] px-3 py-1 rounded-[7px] text-[12px] cursor-pointer hover:brightness-95"
-            onClick={() => window.location.reload()}
-          >
+          <button className="bg-white text-[var(--accent)] font-[650] px-3 py-1 rounded-[7px] text-[12px] cursor-pointer hover:brightness-95" onClick={() => window.location.reload()}>
             Refresh now
           </button>
         </div>
       )}
+
       {/* Header */}
-      <header className="flex items-center justify-between gap-3.5 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-[10px] bg-gradient-to-br from-[var(--accent)] to-[var(--stock)] flex items-center justify-center text-white font-extrabold text-[17px] select-none">
-            ES
-          </div>
-          <div>
-            <h1 className="text-[19px] font-bold tracking-tight text-[var(--text-primary)]">Machine Monitoring System</h1>
-            <p className="text-[12.5px] text-[var(--text-muted)]">ES Print Group of Companies · inventory · incoming · reservations · deliveries</p>
+      <header className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[var(--accent)] to-[var(--stock)] flex items-center justify-center text-white font-extrabold text-[16px] select-none flex-none">ES</div>
+          <div className="min-w-0">
+            <h1 className="text-[15px] md:text-[19px] font-bold tracking-tight text-[var(--text-primary)] leading-tight truncate">Machine Monitoring System</h1>
+            <p className="text-[11px] md:text-[12.5px] text-[var(--text-muted)] hidden sm:block">ES Print Group of Companies · inventory · incoming · reservations · deliveries</p>
           </div>
         </div>
 
-        {/* Top actions */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Desktop buttons */}
+        <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
           <span className="text-[12.5px] text-[var(--text-secondary)] bg-[var(--surface-2)] border border-[var(--border)] px-3 py-1.5 rounded-full whitespace-nowrap">
             <b>{user.display_name || user.username}</b> · {user.role?.label ?? user.role_key}
           </span>
-          {savedAt && <span className="text-[11.5px] text-[var(--text-muted)] flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[var(--stock)] inline-block" />{savedAt}</span>}
           {pm.manageUsers && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={() => setAdminOpen(true)}>🛡️ Access</button>}
           {pm.manageUsers && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={handleImport}>⬆ Import</button>}
           {pm.manageUsers && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={handleBackup}>💾 Backup</button>}
@@ -159,32 +155,48 @@ export default function App() {
           {pm.edit && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--accent)] text-white border border-[var(--accent)] hover:brightness-110 px-3.5 py-2 rounded-[9px] text-[13px]" onClick={() => { setView('machines'); setAddOpen(true) }}>＋ Add Machine</button>}
           <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={logout}>⎋ Logout</button>
         </div>
+
+        {/* Mobile buttons */}
+        <div className="flex md:hidden items-center gap-1.5 flex-none">
+          <button className="inline-flex items-center font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] px-2.5 py-2 rounded-[9px] text-[13px]" onClick={toggleTheme}>{theme === 'dark' ? '☀' : '🌙'}</button>
+          {pm.edit && <button className="inline-flex items-center font-[550] cursor-pointer bg-[var(--accent)] text-white border border-[var(--accent)] px-2.5 py-2 rounded-[9px] text-[12px]" onClick={() => { setView('machines'); setAddOpen(true) }}>＋ Add</button>}
+          <button className="inline-flex items-center font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] px-2.5 py-2 rounded-[9px] text-[13px]" onClick={() => setMobileMenuOpen(o => !o)}>☰</button>
+        </div>
       </header>
 
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden mt-2 bg-[var(--surface-1)] border border-[var(--border)] rounded-[12px] p-3 flex flex-col gap-1 shadow-[var(--shadow)]">
+          <div className="text-[12px] text-[var(--text-secondary)] px-2 pb-2 border-b border-[var(--border)] mb-1">
+            <b>{user.display_name || user.username}</b> · {user.role?.label ?? user.role_key}
+          </div>
+          {pm.manageUsers && <button className="text-left px-3 py-2 rounded-[9px] text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-2)]" onClick={() => { setAdminOpen(true); setMobileMenuOpen(false) }}>🛡️ Access Control</button>}
+          {pm.manageUsers && <button className="text-left px-3 py-2 rounded-[9px] text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-2)]" onClick={() => { handleImport(); setMobileMenuOpen(false) }}>⬆ Import</button>}
+          {pm.manageUsers && <button className="text-left px-3 py-2 rounded-[9px] text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-2)]" onClick={() => { handleBackup(); setMobileMenuOpen(false) }}>💾 Backup</button>}
+          <button className="text-left px-3 py-2 rounded-[9px] text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-2)]" onClick={() => { handleExportCSV(); setMobileMenuOpen(false) }}>⬇ Export CSV</button>
+          <button className="text-left px-3 py-2 rounded-[9px] text-[13px] text-[var(--danger)] hover:bg-[var(--surface-2)] border-t border-[var(--border)] mt-1 pt-3" onClick={logout}>⎋ Logout</button>
+        </div>
+      )}
+
       {/* View nav */}
-      <div className="flex gap-1 bg-[var(--surface-2)] p-1 rounded-[11px] w-fit mt-3.5 mb-1">
+      <div className="flex gap-1 bg-[var(--surface-2)] p-1 rounded-[11px] w-full sm:w-fit mt-3 mb-1 overflow-x-auto">
         {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setView(t.key)}
-            className={`px-5 py-2 rounded-[8px] border-none text-[13.5px] font-[650] cursor-pointer transition-all ${view === t.key ? 'bg-[var(--surface-1)] text-[var(--text-primary)] shadow-[var(--shadow)]' : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          >
+          <button key={t.key} onClick={() => setView(t.key)}
+            className={`px-3 sm:px-5 py-2 rounded-[8px] border-none text-[12px] sm:text-[13.5px] font-[650] cursor-pointer transition-all whitespace-nowrap flex-1 sm:flex-none ${view === t.key ? 'bg-[var(--surface-1)] text-[var(--text-primary)] shadow-[var(--shadow)]' : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
             {t.label}
           </button>
         ))}
       </div>
 
       {/* Views */}
-      <div className="mt-3.5">
-        {/* Always keep MachinesView mounted so addOpen prop works from any tab */}
+      <div className="mt-3">
         <div style={{ display: view === 'machines' ? 'block' : 'none' }}>
           <MachinesView addOpen={addOpen} setAddOpen={setAddOpen} />
         </div>
-        {view === 'stock'    && <StockView />}
-        {view === 'tba'      && <TBAView />}
+        {view === 'stock' && <StockView />}
+        {view === 'tba'   && <TBAView />}
       </div>
 
-      {/* Admin panel */}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
 
       <footer className="text-center text-[var(--text-muted)] text-[11.5px] mt-6 mb-2.5 leading-relaxed">
