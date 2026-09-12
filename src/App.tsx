@@ -135,7 +135,9 @@ export default function App() {
       {/* Header */}
       <header className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[var(--accent)] to-[var(--stock)] flex items-center justify-center text-white font-extrabold text-[16px] select-none flex-none">ES</div>
+          <div className="w-10 h-10 rounded-[10px] overflow-hidden flex-none">
+            <img src="/Logo.jpg" alt="ES Print Logo" className="w-full h-full object-cover" />
+          </div>
           <div className="min-w-0">
             <h1 className="text-[15px] md:text-[19px] font-bold tracking-tight text-[var(--text-primary)] leading-tight truncate">Machine Monitoring System</h1>
             <p className="text-[11px] md:text-[12.5px] text-[var(--text-muted)] hidden sm:block">ES Print Group of Companies · inventory · incoming · reservations · deliveries</p>

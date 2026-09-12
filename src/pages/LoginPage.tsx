@@ -30,8 +30,8 @@ export function LoginPage() {
     <div className="fixed inset-0 bg-[var(--surface-0)] flex items-center justify-center p-5 z-[100]">
       <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,.25)] w-full max-w-[380px] px-7 py-8 text-center">
         {/* Logo */}
-        <div className="w-14 h-14 rounded-[13px] bg-gradient-to-br from-[var(--accent)] to-[var(--stock)] flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-4 select-none">
-          ES
+        <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-4">
+          <img src="/Logo.jpg" alt="ES Print Logo" className="w-full h-full object-cover" />
         </div>
         <h2 className="text-[18px] font-bold text-[var(--text-primary)]">Machine Monitoring System</h2>
         <p className="text-[12.5px] text-[var(--text-muted)] mt-1 mb-5">ES Print Group of Companies — sign in to continue</p>
