@@ -119,7 +119,7 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     })
     updateMachine.mutate({
       id: m.id,
-      updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null },
+      updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null, location: null, notes: null },
       event: `Moved reservation (${m.client_name}) to TBA list — unit returned to available stock`,
       requireStatus: 'Reserved',
     }, { onError: onMutationError })
@@ -129,7 +129,7 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     if (!window.confirm(`Unreserve ${m.model} from ${m.client_name}?`)) return
     updateMachine.mutate({
       id: m.id,
-      updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null },
+      updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null, location: null, notes: null },
       event: `Reservation cancelled (was ${m.client_name})`,
       requireStatus: 'Reserved',
     }, { onError: onMutationError })
