@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Field, Grid2, Input, Select, Textarea, Banner } from '../ui/Field'
 import { LookupSelect } from '../ui/LookupSelect'
 import { ALL_STATUSES } from '../../lib/constants'
-import { useMachineHistory } from '../../hooks/useMachines'
 import type { Machine } from '../../types/database'
 
 export interface MachineFormData {
@@ -20,12 +19,13 @@ export interface MachineFormData {
   delivery_date: string
   dispatch_date: string
   notes: string
+  history_note: string
 }
 
 const empty: MachineFormData = {
   serial_no: '', po_no: '', brand: '', model: '', branch: '',
   status: 'In Stock', client_name: '', client_code: '', location: '',
-  ae: '', reservation_date: '', delivery_date: '', dispatch_date: '', notes: '',
+  ae: '', reservation_date: '', delivery_date: '', dispatch_date: '', notes: '', history_note: '',
 }
 
 function fromMachine(m: Machine): MachineFormData {
@@ -44,6 +44,7 @@ function fromMachine(m: Machine): MachineFormData {
     delivery_date:    m.delivery_date    ?? '',
     dispatch_date:    m.dispatch_date    ?? '',
     notes:            m.notes            ?? '',
+    history_note:     '',
   }
 }
 
@@ -158,8 +159,9 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
         <Textarea value={form.notes} onChange={onChange('notes')} placeholder="Anything worth remembering about this unit" />
       </Field>
 
-      {/* History — visible in both add and edit, same style */}
-      {machine ? <HistorySection machineId={machine.id} /> : <HistorySection />}
+      <Field label="History">
+        <Textarea value={form.history_note} onChange={onChange('history_note')} placeholder="Add a history note…" />
+      </Field>
 
       {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
 
@@ -182,31 +184,4 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
   )
 }
 
-function HistorySection({ machineId }: { machineId?: string }) {
-  const { data: history, isLoading } = useMachineHistory(machineId ?? '')
 
-  return (
-    <div className="mt-1">
-      <p className="text-[12px] font-semibold text-[var(--text-secondary)] mb-1.5">History</p>
-      <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-[9px] px-3 py-2.5 min-h-[80px] max-h-52 overflow-y-auto">
-        {isLoading && <p className="text-[12px] text-[var(--text-muted)]">Loading…</p>}
-        {!isLoading && !history?.length && (
-          <p className="text-[12px] text-[var(--text-muted)]">No history yet.</p>
-        )}
-        <div className="flex flex-col">
-          {history?.map(h => (
-            <div key={h.id} className="flex items-baseline gap-3 py-1.5 border-b border-[var(--border)] last:border-0 text-[11.5px]">
-              <span className="text-[var(--text-muted)] whitespace-nowrap flex-none w-32">
-                {h.created_at.slice(0, 16).replace('T', ' ')}
-              </span>
-              <span className="text-[var(--text-secondary)] flex-1">{h.event}</span>
-              {h.actor && (
-                <span className="text-[var(--text-muted)] flex-none">· {h.actor}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}

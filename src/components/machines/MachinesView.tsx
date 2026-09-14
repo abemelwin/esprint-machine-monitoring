@@ -141,20 +141,24 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
   }
 
   const doAdd = (data: MachineFormData, qty: number) => {
+    const { history_note, ...machineData } = data
     addMachine.mutate({
-      data: { ...data, status: data.status as MachineStatus },
+      data: { ...machineData, status: machineData.status as MachineStatus },
       qty,
+      history_note,
     }, { onSuccess: () => setAddOpen(false) })
   }
 
   const doEdit = (data: MachineFormData) => {
     if (!editTarget) return
+    const { history_note, ...machineData } = data
     const oldStatus = editTarget.status
-    const newStatus = data.status as MachineStatus
+    const newStatus = machineData.status as MachineStatus
     updateMachine.mutate({
       id: editTarget.id,
-      updates: { ...data, status: newStatus },
+      updates: { ...machineData, status: newStatus },
       event: oldStatus !== newStatus ? `Status changed: ${oldStatus} → ${newStatus} (edit)` : 'Details edited',
+      history_note,
     }, { onSuccess: () => setEditTarget(null) })
   }
 

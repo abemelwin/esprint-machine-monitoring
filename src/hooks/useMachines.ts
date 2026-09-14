@@ -52,6 +52,7 @@ export function useAddMachine() {
     mutationFn: async (payload: {
       data: Omit<Machine, 'id' | 'created_at' | 'updated_at'>
       qty: number
+      history_note?: string
     }) => {
       const rows = Array.from({ length: payload.qty }, () => ({
         ...payload.data,
@@ -62,10 +63,12 @@ export function useAddMachine() {
       }))
       const { data, error } = await supabase.from('machines').insert(rows).select()
       if (error) throw error
-      // log history for each
-      await Promise.all((data as Machine[]).map((m, i) =>
-        logHistory(m.id, `Added as ${m.status}${payload.qty > 1 ? ` (batch ${i + 1} of ${payload.qty})` : ''}`, user?.username ?? null)
-      ))
+      await Promise.all((data as Machine[]).map((m, i) => {
+        const baseEvent = `Added as ${m.status}${payload.qty > 1 ? ` (batch ${i + 1} of ${payload.qty})` : ''}`
+        const events = [logHistory(m.id, baseEvent, user?.username ?? null)]
+        if (payload.history_note?.trim()) events.push(logHistory(m.id, payload.history_note.trim(), user?.username ?? null))
+        return Promise.all(events)
+      }))
       return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: MACHINES_KEY }),
@@ -83,6 +86,7 @@ export function useUpdateMachine() {
       event: string
       // Optional: if provided, the update will only proceed if current status matches
       requireStatus?: string
+      history_note?: string
     }) => {
       // ── Concurrency guard for status-changing operations ──────────
       // If requireStatus is set (e.g. 'In Stock' for reserve, 'Reserved' for deliver),
@@ -115,6 +119,7 @@ export function useUpdateMachine() {
         .single()
       if (error) throw error
       await logHistory(payload.id, payload.event, user?.username ?? null)
+      if (payload.history_note?.trim()) await logHistory(payload.id, payload.history_note.trim(), user?.username ?? null)
       return data as Machine
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: MACHINES_KEY }),
