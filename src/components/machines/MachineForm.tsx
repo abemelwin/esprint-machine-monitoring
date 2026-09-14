@@ -187,23 +187,25 @@ function HistorySection({ machineId }: { machineId?: string }) {
 
   return (
     <div className="mt-1">
-      <p className="text-[11px] font-[650] text-[var(--text-muted)] uppercase tracking-[.05em] mb-2">History</p>
-      {isLoading && <p className="text-[12px] text-[var(--text-muted)]">Loading…</p>}
-      {!isLoading && !history?.length && (
-        <p className="text-[12px] text-[var(--text-muted)]">No history yet.</p>
-      )}
-      <div className="flex flex-col max-h-52 overflow-y-auto">
-        {history?.map(h => (
-          <div key={h.id} className="flex items-baseline gap-3 py-1.5 border-b border-[var(--border)] last:border-0 text-[11.5px]">
-            <span className="text-[var(--text-muted)] whitespace-nowrap flex-none w-32">
-              {h.created_at.slice(0, 16).replace('T', ' ')}
-            </span>
-            <span className="text-[var(--text-secondary)] flex-1">{h.event}</span>
-            {h.actor && (
-              <span className="text-[var(--text-muted)] flex-none">· {h.actor}</span>
-            )}
-          </div>
-        ))}
+      <p className="text-[12px] font-semibold text-[var(--text-secondary)] mb-1.5">History</p>
+      <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-[9px] px-3 py-2.5 min-h-[80px] max-h-52 overflow-y-auto">
+        {isLoading && <p className="text-[12px] text-[var(--text-muted)]">Loading…</p>}
+        {!isLoading && !history?.length && (
+          <p className="text-[12px] text-[var(--text-muted)]">No history yet.</p>
+        )}
+        <div className="flex flex-col">
+          {history?.map(h => (
+            <div key={h.id} className="flex items-baseline gap-3 py-1.5 border-b border-[var(--border)] last:border-0 text-[11.5px]">
+              <span className="text-[var(--text-muted)] whitespace-nowrap flex-none w-32">
+                {h.created_at.slice(0, 16).replace('T', ' ')}
+              </span>
+              <span className="text-[var(--text-secondary)] flex-1">{h.event}</span>
+              {h.actor && (
+                <span className="text-[var(--text-muted)] flex-none">· {h.actor}</span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
