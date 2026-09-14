@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Field, Grid2, Input, Select, Textarea, Banner } from '../ui/Field'
 import { LookupSelect } from '../ui/LookupSelect'
 import { ALL_STATUSES } from '../../lib/constants'
+import { useMachineHistory } from '../../hooks/useMachines'
 import type { Machine } from '../../types/database'
 
 export interface MachineFormData {
@@ -157,6 +158,9 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
         <Textarea value={form.notes} onChange={onChange('notes')} placeholder="Anything worth remembering about this unit" />
       </Field>
 
+      {/* History — edit mode only */}
+      {!isAdd && machine && <HistorySection machineId={machine.id} />}
+
       {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
 
       <div className="flex gap-2.5 justify-end pt-1">
@@ -173,6 +177,31 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
         >
           {loading ? 'Saving…' : isAdd ? 'Add Machine' : 'Save Changes'}
         </button>
+      </div>
+    </div>
+  )
+}
+
+function HistorySection({ machineId }: { machineId: string }) {
+  const { data: history, isLoading } = useMachineHistory(machineId)
+
+  return (
+    <div className="border-t border-[var(--border)] pt-4">
+      <p className="text-[11px] font-[650] text-[var(--text-muted)] uppercase tracking-wide mb-2">History</p>
+      {isLoading && <p className="text-[12px] text-[var(--text-muted)]">Loading…</p>}
+      {!isLoading && !history?.length && (
+        <p className="text-[12px] text-[var(--text-muted)]">No history yet.</p>
+      )}
+      <div className="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1">
+        {history?.map(h => (
+          <div key={h.id} className="flex gap-2 text-[11.5px] py-1 border-b border-[var(--border)] last:border-0">
+            <span className="text-[var(--text-muted)] whitespace-nowrap flex-none">
+              {h.created_at.slice(0, 16).replace('T', ' ')}
+            </span>
+            <span className="text-[var(--text-secondary)] flex-1">{h.event}</span>
+            {h.actor && <span className="text-[var(--text-muted)] flex-none">· {h.actor}</span>}
+          </div>
+        ))}
       </div>
     </div>
   )
