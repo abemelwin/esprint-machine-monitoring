@@ -158,8 +158,8 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
         <Textarea value={form.notes} onChange={onChange('notes')} placeholder="Anything worth remembering about this unit" />
       </Field>
 
-      {/* History — edit mode only */}
-      {!isAdd && machine && <HistorySection machineId={machine.id} />}
+      {/* History — visible in both add and edit, same style */}
+      {machine ? <HistorySection machineId={machine.id} /> : <HistorySection />}
 
       {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
 
@@ -182,24 +182,26 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
   )
 }
 
-function HistorySection({ machineId }: { machineId: string }) {
-  const { data: history, isLoading } = useMachineHistory(machineId)
+function HistorySection({ machineId }: { machineId?: string }) {
+  const { data: history, isLoading } = useMachineHistory(machineId ?? '')
 
   return (
-    <div className="border-t border-[var(--border)] pt-4">
-      <p className="text-[11px] font-[650] text-[var(--text-muted)] uppercase tracking-wide mb-2">History</p>
+    <div className="mt-1">
+      <p className="text-[11px] font-[650] text-[var(--text-muted)] uppercase tracking-[.05em] mb-2">History</p>
       {isLoading && <p className="text-[12px] text-[var(--text-muted)]">Loading…</p>}
       {!isLoading && !history?.length && (
         <p className="text-[12px] text-[var(--text-muted)]">No history yet.</p>
       )}
-      <div className="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1">
+      <div className="flex flex-col max-h-52 overflow-y-auto">
         {history?.map(h => (
-          <div key={h.id} className="flex gap-2 text-[11.5px] py-1 border-b border-[var(--border)] last:border-0">
-            <span className="text-[var(--text-muted)] whitespace-nowrap flex-none">
+          <div key={h.id} className="flex items-baseline gap-3 py-1.5 border-b border-[var(--border)] last:border-0 text-[11.5px]">
+            <span className="text-[var(--text-muted)] whitespace-nowrap flex-none w-32">
               {h.created_at.slice(0, 16).replace('T', ' ')}
             </span>
             <span className="text-[var(--text-secondary)] flex-1">{h.event}</span>
-            {h.actor && <span className="text-[var(--text-muted)] flex-none">· {h.actor}</span>}
+            {h.actor && (
+              <span className="text-[var(--text-muted)] flex-none">· {h.actor}</span>
+            )}
           </div>
         ))}
       </div>
