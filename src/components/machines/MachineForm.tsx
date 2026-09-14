@@ -159,9 +159,11 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
         <Textarea value={form.notes} onChange={onChange('notes')} placeholder="Anything worth remembering about this unit" />
       </Field>
 
-      <Field label="History">
-        <Textarea value={form.history_note} onChange={onChange('history_note')} placeholder="Add a history note…" />
-      </Field>
+      {(form.status === 'Demo' || form.status === 'Recertified') && (
+        <Field label="History">
+          <Textarea value={form.history_note} onChange={onChange('history_note')} placeholder="Add a history note…" />
+        </Field>
+      )}
 
       {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
 
