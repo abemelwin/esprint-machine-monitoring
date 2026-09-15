@@ -65,7 +65,7 @@ export function useAddMachine() {
       if (error) throw error
       await Promise.all((data as Machine[]).map((m, i) => {
         const baseEvent = `Added as ${m.status}${payload.qty > 1 ? ` (batch ${i + 1} of ${payload.qty})` : ''}`
-        const actor = user?.email ?? user?.username ?? null
+        const actor = user?.display_name || user?.email || user?.username || null
         const events = [logHistory(m.id, baseEvent, actor)]
         if (payload.history_note?.trim()) events.push(logHistory(m.id, payload.history_note.trim(), actor))
         return Promise.all(events)
@@ -115,7 +115,7 @@ export function useUpdateMachine() {
         .select()
         .single()
       if (error) throw error
-      const actor = user?.email ?? user?.username ?? null
+      const actor = user?.display_name || user?.email || user?.username || null
       await logHistory(payload.id, payload.event, actor)
       if (payload.history_note?.trim()) await logHistory(payload.id, payload.history_note.trim(), actor)
       return data as Machine

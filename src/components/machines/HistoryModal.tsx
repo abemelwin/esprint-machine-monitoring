@@ -1,5 +1,6 @@
 import { Modal } from '../ui/Modal'
 import { useMachineHistory } from '../../hooks/useMachines'
+import { useUsers } from '../../hooks/useAdmin'
 import type { Machine } from '../../types/database'
 
 interface Props {
@@ -9,6 +10,18 @@ interface Props {
 
 export function HistoryModal({ machine, onClose }: Props) {
   const { data: history, isLoading } = useMachineHistory(machine?.id ?? '')
+  const { data: users } = useUsers()
+
+  const formatActor = (actor: string | null) => {
+    if (!actor) return null
+    if (!actor.includes('@')) return actor
+    // Look up matching user's display name
+    const match = users?.find(
+      u => u.email?.toLowerCase() === actor.toLowerCase() ||
+           u.username?.toLowerCase() === actor.toLowerCase()
+    )
+    return match?.display_name || actor.split('@')[0]
+  }
 
   return (
     <Modal
@@ -29,13 +42,18 @@ export function HistoryModal({ machine, onClose }: Props) {
         {!isLoading && !history?.length && (
           <p className="text-[12px] text-[var(--text-muted)]">No history yet.</p>
         )}
-        {history?.map(h => (
-          <div key={h.id} className="flex gap-2.5 text-[11.5px] py-1">
-            <b className="text-[var(--text-secondary)] font-semibold whitespace-nowrap">{h.created_at.slice(0, 16).replace('T', ' ')}</b>
-            <span className="text-[var(--text-muted)]">{h.event}</span>
-            {h.actor && <span className="text-[var(--text-muted)] ml-auto">· {h.actor}</span>}
-          </div>
-        ))}
+        {history?.map(h => {
+          const actorName = formatActor(h.actor)
+          return (
+            <div key={h.id} className="flex gap-2.5 text-[11.5px] py-1">
+              <b className="text-[var(--text-secondary)] font-semibold whitespace-nowrap">
+                {h.created_at.slice(0, 16).replace('T', ' ')}
+              </b>
+              <span className="text-[var(--text-muted)]">{h.event}</span>
+              {actorName && <span className="text-[var(--text-muted)] ml-auto">· {actorName}</span>}
+            </div>
+          )
+        })}
       </div>
     </Modal>
   )
