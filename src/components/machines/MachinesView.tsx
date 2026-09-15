@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useMachines, useAddMachine, useUpdateMachine, useDeleteMachine } from '../../hooks/useMachines'
 import { useAddTBA } from '../../hooks/useTBA'
 import { useAuth } from '../../hooks/useAuth'
-import { getPerms, canSeeClient, canSeeRow, hideClientCols } from '../../lib/permissions'
+import { getPerms, canSeeClient, hideClientCols } from '../../lib/permissions'
 import { STATUS_CONFIG, ALL_STATUSES } from '../../lib/constants'
 import { StatusPill } from '../ui/Pill'
 import { Button } from '../ui/Button'
@@ -54,8 +54,6 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
 
   const filtered = useMemo(() => {
     let rows = machines.slice()
-    // AE visibility: restricted users only see rows assigned to their AE code(s)
-    rows = rows.filter(m => canSeeRow(user, m.ae))
     if (hideDel) rows = rows.filter(m => m.status !== 'Delivered')
     if (fStatus) rows = rows.filter(m => m.status === fStatus)
     if (fBrand)  rows = rows.filter(m => m.brand  === fBrand)
