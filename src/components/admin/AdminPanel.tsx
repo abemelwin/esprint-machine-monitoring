@@ -157,6 +157,20 @@ function UsersTab() {
   const updateUser = useUpdateUser()
   const deleteUser = useDeleteUser()
   const [editTarget, setEditTarget] = useState<UserProfileWithRole | null | 'new'>(null)
+  const [search,     setSearch]     = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+
+  // Filter by search text (email / name / username) and by role
+  const q = search.trim().toLowerCase()
+  const filteredUsers = users.filter(u => {
+    if (roleFilter && u.inv_role_key !== roleFilter) return false
+    if (!q) return true
+    return (
+      (u.email        ?? '').toLowerCase().includes(q) ||
+      (u.display_name ?? '').toLowerCase().includes(q) ||
+      (u.username     ?? '').toLowerCase().includes(q)
+    )
+  })
 
   const handleDelete = (u: UserProfileWithRole) => {
     if (u.user_id === currentUser?.user_id) { alert('You cannot delete your own account.'); return }
@@ -170,6 +184,29 @@ function UsersTab() {
   return (
     <>
       <Banner>Each person signs in with their own email &amp; password. Assign a <b>Role</b> and set <b>AE access</b> for client visibility.</Banner>
+
+      {/* Search + role filter */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-3">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="🔍 Search by name or email…"
+          className="flex-1 bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)]"
+        />
+        <select
+          value={roleFilter}
+          onChange={e => setRoleFilter(e.target.value)}
+          className="bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)]"
+        >
+          <option value="">All Roles</option>
+          {roles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+        </select>
+        <span className="flex items-center px-3 text-[12px] text-[var(--text-muted)] whitespace-nowrap">
+          {filteredUsers.length} of {users.length} users
+        </span>
+      </div>
+
       <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
         <table className="w-full border-collapse">
           <thead><tr>
@@ -180,7 +217,7 @@ function UsersTab() {
             <th className={`${thCls} text-right`}>Actions</th>
           </tr></thead>
           <tbody>
-            {users.map(u => {
+            {filteredUsers.map(u => {
               const rl = u.inv_role
               const aeAccess = (rl?.perms?.viewClient)
                 ? 'All clients'
