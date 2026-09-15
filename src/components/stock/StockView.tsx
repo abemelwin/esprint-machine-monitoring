@@ -3,7 +3,7 @@ import { useMachines } from '../../hooks/useMachines'
 import { useTBA } from '../../hooks/useTBA'
 import { useReorderPoints, useSetReorderPoint } from '../../hooks/useReorderPoints'
 import { useAuth } from '../../hooks/useAuth'
-import { getPerms } from '../../lib/permissions'
+import { getPerms, canSeeRow } from '../../lib/permissions'
 import { Button } from '../ui/Button'
 
 interface StockRow {
@@ -28,9 +28,12 @@ function buildRows(
   tbaList:  ReturnType<typeof useTBA>['data'],
   reorderPts: ReturnType<typeof useReorderPoints>['data'],
   branchFilter: string,
+  user: Parameters<typeof canSeeRow>[0],
 ): StockRow[] {
   const g: Record<string, StockRow> = {}
   ;(machines ?? []).forEach(m => {
+    // AE visibility: restricted users only count machines for their AE code(s)
+    if (!canSeeRow(user, m.ae)) return
     if (branchFilter && (m.branch ?? '') !== branchFilter) return
     const brand = (m.brand ?? '').trim() || '(no brand)'
     const model = (m.model ?? '').trim() || '(no model)'
@@ -47,6 +50,7 @@ function buildRows(
 
   const tbaCount: Record<string, number> = {}
   ;(tbaList ?? []).forEach(t => {
+    if (!canSeeRow(user, t.ae)) return
     const k = `${(t.brand ?? '').trim() || '(no brand)'}||${(t.model ?? '').trim() || '(no model)'}`
     tbaCount[k] = (tbaCount[k] ?? 0) + 1
   })
@@ -83,7 +87,7 @@ export function StockView() {
   const [rpOnly,  setRpOnly]  = useState(false)
 
   const allBranches = [...new Set(machines.map(m => (m.branch ?? '').trim()).filter(Boolean))].sort()
-  const allRows     = useMemo(() => buildRows(machines, tbaList, reorderPts, fBranch), [machines, tbaList, reorderPts, fBranch])
+  const allRows     = useMemo(() => buildRows(machines, tbaList, reorderPts, fBranch, user), [machines, tbaList, reorderPts, fBranch, user])
   const allBrands   = [...new Set(allRows.map(r => r.brand))].sort()
 
   const rows = useMemo(() => {

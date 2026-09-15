@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useTBA, useAddTBA, useUpdateTBA, useDeleteTBA } from '../../hooks/useTBA'
 import { useMachines, useUpdateMachine } from '../../hooks/useMachines'
 import { useAuth } from '../../hooks/useAuth'
-import { getPerms, canSeeClient, hideClientCols } from '../../lib/permissions'
+import { getPerms, canSeeClient, canSeeRow, hideClientCols } from '../../lib/permissions'
 import { today } from '../../lib/constants'
 import { Button } from '../ui/Button'
 import { Modal, ModalFooter } from '../ui/Modal'
@@ -50,6 +50,8 @@ export function TBAView() {
 
   const filtered = useMemo(() => {
     let rows = tbaList.slice()
+    // AE visibility: restricted users only see TBA rows for their AE code(s)
+    rows = rows.filter(t => canSeeRow(user, t.ae))
     if (q.trim()) {
       const lq = q.toLowerCase()
       rows = rows.filter(t => [t.brand, t.model, t.client_name, t.client_code, t.ae, t.location].some(v => String(v ?? '').toLowerCase().includes(lq)))
@@ -58,7 +60,7 @@ export function TBAView() {
     if (fModel) rows = rows.filter(t => t.model === fModel)
     if (fAE)    rows = rows.filter(t => t.ae    === fAE)
     return rows.sort((a, b) => (a.brand ?? '').localeCompare(b.brand ?? '') || a.model.localeCompare(b.model))
-  }, [tbaList, q, fBrand, fModel, fAE])
+  }, [tbaList, q, fBrand, fModel, fAE, user])
 
   const uniq = (k: keyof TBAItem) => [...new Set(tbaList.map(t => t[k]).filter(Boolean))].sort() as string[]
 

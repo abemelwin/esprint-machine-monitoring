@@ -27,6 +27,18 @@ export function canSeeClient(user: UserProfileWithRole | null, aeVal: string | n
   return clientAESet(user).has((aeVal ?? '').trim())
 }
 
+// Whether a whole row (machine / TBA / stock item) is visible to the user.
+// Full-access roles (viewClient) see every row. Otherwise the user only sees
+// rows whose AE is in their own + approved AE set. Unassigned rows (blank AE)
+// are hidden from restricted users.
+export function canSeeRow(user: UserProfileWithRole | null, aeVal: string | null): boolean {
+  const p = getPerms(user)
+  if (p.viewClient) return true
+  const ae = (aeVal ?? '').trim()
+  if (!ae) return false
+  return clientAESet(user).has(ae)
+}
+
 export function hideClientCols(user: UserProfileWithRole | null): boolean {
   const p = getPerms(user)
   return !p.viewClient && clientAESet(user).size === 0
