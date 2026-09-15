@@ -43,7 +43,12 @@ export function LookupSelect({ kind, value, onChange, placeholder, id }: Props) 
     setOpen(false)
   }
 
+  // Only branches & AEs are editable here. Brands & models are sourced from
+  // the shared Sales Portal machine catalog and are read-only in this app.
+  const isEditable = kind === 'branches' || kind === 'aes'
+
   const handleAdd = async () => {
+    if (!isEditable) return
     const newVal = window.prompt(`Add a new ${LABELS[kind]}:`)?.trim()
     if (!newVal) return
     await addLookup.mutateAsync({ table: kind, value: newVal })
@@ -53,6 +58,7 @@ export function LookupSelect({ kind, value, onChange, placeholder, id }: Props) 
 
   const handleDelete = async (e: React.MouseEvent, v: string) => {
     e.stopPropagation()
+    if (!isEditable) return
     if (!window.confirm(`Delete "${v}" from the list? This won't affect existing machines that use it.`)) return
     await deleteLookup.mutateAsync({ table: kind, value: v })
     if (value === v) onChange('')
@@ -94,25 +100,29 @@ export function LookupSelect({ kind, value, onChange, placeholder, id }: Props) 
                 onClick={() => handleSelect(o)}
               >
                 <span>{o}</span>
-                <button
-                  type="button"
-                  className="text-[var(--text-muted)] hover:text-[var(--danger)] text-[12px] px-1.5 py-0.5 rounded ml-2 hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] transition-colors"
-                  onClick={e => handleDelete(e, o)}
-                  title={`Delete "${o}"`}
-                >
-                  ✕
-                </button>
+                {isEditable && (
+                  <button
+                    type="button"
+                    className="text-[var(--text-muted)] hover:text-[var(--danger)] text-[12px] px-1.5 py-0.5 rounded ml-2 hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] transition-colors"
+                    onClick={e => handleDelete(e, o)}
+                    title={`Delete "${o}"`}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             ))}
           </div>
 
-          {/* Add new */}
-          <div
-            className="px-3 py-2 text-[13px] text-[var(--accent)] hover:bg-[var(--surface-2)] cursor-pointer border-t border-[var(--border)] font-[550]"
-            onClick={handleAdd}
-          >
-            ＋ Add new…
-          </div>
+          {/* Add new — only for editable lookups (branches / AEs) */}
+          {isEditable && (
+            <div
+              className="px-3 py-2 text-[13px] text-[var(--accent)] hover:bg-[var(--surface-2)] cursor-pointer border-t border-[var(--border)] font-[550]"
+              onClick={handleAdd}
+            >
+              ＋ Add new…
+            </div>
+          )}
         </div>
       )}
     </div>

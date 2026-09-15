@@ -7,7 +7,8 @@ export type MachineStatus =
   | 'Delivered'
   | 'Pullout Parts'
 
-export interface Machine {
+// ── Inventory unit (was "Machine" — now stored in inventory_units table) ──
+export interface InventoryUnit {
   id: string
   serial_no: string | null
   po_no: string | null
@@ -27,6 +28,9 @@ export interface Machine {
   updated_at: string
   [key: string]: unknown
 }
+
+// Keep "Machine" as an alias so components need minimal changes
+export type Machine = InventoryUnit
 
 export interface MachineHistory {
   id: string
@@ -58,13 +62,17 @@ export interface ReorderPoint {
   quantity: number
 }
 
-export interface Role {
+// ── Inventory roles (stored in inv_roles table) ──────────────────
+export interface InvRole {
   id: string
   key: string
   label: string
   perms: RolePerms
   created_at: string
 }
+
+// Keep "Role" as alias so components need minimal changes
+export type Role = InvRole
 
 export interface RolePerms {
   edit?: boolean
@@ -75,30 +83,40 @@ export interface RolePerms {
   viewClient?: boolean
 }
 
+// ── User profile (shared with Sales Portal, uses user_id FK) ─────
+// The SP user_profiles table uses user_id (not id) as the auth FK.
+// MM-specific columns added via migration: username, inv_role_key, ae_code, approved_aes
 export interface UserProfile {
-  id: string
-  username: string
+  // SP columns
+  user_id: string          // FK to auth.users
   display_name: string | null
-  role_key: string
+  role: string             // SP role string (e.g. 'account_executive')
+  is_active: boolean
+  email: string | null
+  created_at: string
+  // MM-specific columns (added by migration)
+  username: string | null
+  inv_role_key: string | null
   ae_code: string | null
   approved_aes: string[]
-  created_at: string
-  updated_at: string
+  // Membership flags — which app's Users panel shows this person
+  is_sp_member: boolean
+  is_mm_member: boolean
 }
 
-// Joined type used in the app
+// Joined type used in the MM app — includes the full inv_role object
 export interface UserProfileWithRole extends UserProfile {
-  role: Role
+  inv_role: InvRole | null
 }
 
-// ── Supabase Database type (for typed client) ──────────────────────
+// ── Supabase Database type ────────────────────────────────────────
 export type Database = {
   public: {
     Tables: {
-      machines: {
-        Row: Machine
-        Insert: Omit<Machine, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<Machine, 'id' | 'created_at'>>
+      inventory_units: {
+        Row: InventoryUnit
+        Insert: Omit<InventoryUnit, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<InventoryUnit, 'id' | 'created_at'>>
       }
       machine_history: {
         Row: MachineHistory
@@ -115,24 +133,21 @@ export type Database = {
         Insert: Omit<ReorderPoint, 'id'>
         Update: Partial<Omit<ReorderPoint, 'id'>>
       }
-      roles: {
-        Row: Role
-        Insert: Omit<Role, 'id' | 'created_at'>
-        Update: Partial<Omit<Role, 'id' | 'created_at'>>
+      inv_roles: {
+        Row: InvRole
+        Insert: Omit<InvRole, 'id' | 'created_at'>
+        Update: Partial<Omit<InvRole, 'id' | 'created_at'>>
       }
       user_profiles: {
         Row: UserProfile
-        Insert: Omit<UserProfile, 'created_at' | 'updated_at'>
-        Update: Partial<Omit<UserProfile, 'id' | 'created_at'>>
+        Insert: Omit<UserProfile, 'created_at'>
+        Update: Partial<Omit<UserProfile, 'user_id' | 'created_at'>>
       }
       branches: { Row: { id: number; code: string }; Insert: { code: string }; Update: { code?: string } }
       aes:      { Row: { id: number; code: string }; Insert: { code: string }; Update: { code?: string } }
-      brands:   { Row: { id: number; name: string }; Insert: { name: string }; Update: { name?: string } }
-      models:   { Row: { id: number; name: string }; Insert: { name: string }; Update: { name?: string } }
     }
     Functions: {
-      has_perm: { Args: { perm: string }; Returns: boolean }
-      current_user_role: { Args: Record<never, never>; Returns: string }
+      has_inv_perm: { Args: { perm: string }; Returns: boolean }
     }
   }
 }

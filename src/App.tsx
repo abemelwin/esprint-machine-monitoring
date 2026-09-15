@@ -147,7 +147,7 @@ export default function App() {
         {/* Desktop buttons */}
         <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
           <span className="text-[12.5px] text-[var(--text-secondary)] bg-[var(--surface-2)] border border-[var(--border)] px-3 py-1.5 rounded-full whitespace-nowrap">
-            <b>{user.display_name || user.username}</b> · {user.role?.label ?? user.role_key}
+            <b>{user.display_name || user.username}</b> · {user.inv_role?.label ?? user.inv_role_key}
           </span>
           {pm.manageUsers && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={() => setAdminOpen(true)}>🛡️ Access</button>}
           {pm.manageUsers && <button className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]" onClick={handleImport}>⬆ Import</button>}
@@ -170,7 +170,7 @@ export default function App() {
       {mobileMenuOpen && (
         <div className="md:hidden mt-2 bg-[var(--surface-1)] border border-[var(--border)] rounded-[12px] p-3 flex flex-col gap-1 shadow-[var(--shadow)]">
           <div className="text-[12px] text-[var(--text-secondary)] px-2 pb-2 border-b border-[var(--border)] mb-1">
-            <b>{user.display_name || user.username}</b> · {user.role?.label ?? user.role_key}
+            <b>{user.display_name || user.username}</b> · {user.inv_role?.label ?? user.inv_role_key}
           </div>
           {pm.manageUsers && <button className="text-left px-3 py-2 rounded-[9px] text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-2)]" onClick={() => { setAdminOpen(true); setMobileMenuOpen(false) }}>🛡️ Access Control</button>}
           {pm.manageUsers && <button className="text-left px-3 py-2 rounded-[9px] text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-2)]" onClick={() => { handleImport(); setMobileMenuOpen(false) }}>⬆ Import</button>}

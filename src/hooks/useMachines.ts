@@ -7,13 +7,13 @@ import { nowStamp } from '../lib/constants'
 export const MACHINES_KEY = ['machines'] as const
 export const HISTORY_KEY = (id: string) => ['machine_history', id] as const
 
-// ── Fetch all machines ─────────────────────────────────────────────
+// ── Fetch all inventory units ──────────────────────────────────────
 export function useMachines() {
   return useQuery({
     queryKey: MACHINES_KEY,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('machines')
+        .from('inventory_units')
         .select('*')
         .order('updated_at', { ascending: false })
       if (error) throw error
@@ -22,7 +22,7 @@ export function useMachines() {
   })
 }
 
-// ── Fetch history for a single machine ────────────────────────────
+// ── Fetch history for a single unit ───────────────────────────────
 export function useMachineHistory(machineId: string) {
   return useQuery({
     queryKey: HISTORY_KEY(machineId),
@@ -61,7 +61,7 @@ export function useAddMachine() {
         delivery_date:    payload.data.delivery_date    || null,
         dispatch_date:    payload.data.dispatch_date    || null,
       }))
-      const { data, error } = await supabase.from('machines').insert(rows).select()
+      const { data, error } = await supabase.from('inventory_units').insert(rows).select()
       if (error) throw error
       await Promise.all((data as Machine[]).map((m, i) => {
         const baseEvent = `Added as ${m.status}${payload.qty > 1 ? ` (batch ${i + 1} of ${payload.qty})` : ''}`
@@ -84,16 +84,13 @@ export function useUpdateMachine() {
       id: string
       updates: Partial<Omit<Machine, 'id' | 'created_at'>>
       event: string
-      // Optional: if provided, the update will only proceed if current status matches
       requireStatus?: string
       history_note?: string
     }) => {
-      // ── Concurrency guard for status-changing operations ──────────
-      // If requireStatus is set (e.g. 'In Stock' for reserve, 'Reserved' for deliver),
-      // fetch the latest status first and abort if it has changed.
+      // Concurrency guard
       if (payload.requireStatus) {
         const { data: current } = await supabase
-          .from('machines')
+          .from('inventory_units')
           .select('status')
           .eq('id', payload.id)
           .single()
@@ -105,14 +102,13 @@ export function useUpdateMachine() {
         }
       }
 
-      // Convert empty date strings to null
       const sanitized = { ...payload.updates }
       const dateFields = ['reservation_date', 'delivery_date', 'dispatch_date'] as const
       dateFields.forEach(f => {
         if ((sanitized as Record<string, unknown>)[f] === '') (sanitized as Record<string, unknown>)[f] = null
       })
       const { data, error } = await supabase
-        .from('machines')
+        .from('inventory_units')
         .update({ ...sanitized, updated_at: nowStamp() })
         .eq('id', payload.id)
         .select()
@@ -131,54 +127,63 @@ export function useDeleteMachine() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('machines').delete().eq('id', id)
+      const { error } = await supabase.from('inventory_units').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: MACHINES_KEY }),
   })
 }
 
-// ── Lookup lists (branches, AEs, brands, models) ──────────────────
+// ── Lookup lists (branches, AEs) ───────────────────────────────────
+// Note: brands & models are shared with the Sales Portal machines catalog.
+// MM reads brand/model values from the catalog's machines table.
 export function useLookups() {
   return useQuery({
     queryKey: ['lookups'],
     queryFn: async () => {
-      const [branches, aes, brands, models] = await Promise.all([
+      const [branches, aes, catalogMachines] = await Promise.all([
         supabase.from('branches').select('code').order('code'),
         supabase.from('aes').select('code').order('code'),
-        supabase.from('brands').select('name').order('name'),
-        supabase.from('models').select('name').order('name'),
+        supabase.from('machines').select('brand, model').eq('is_active', true).order('brand').order('model'),
       ])
+
+      // Derive unique brands & models from the shared catalog
+      const brandSet  = new Set<string>()
+      const modelSet  = new Set<string>()
+      ;(catalogMachines.data ?? []).forEach((r: { brand: string; model: string }) => {
+        if (r.brand) brandSet.add(r.brand)
+        if (r.model) modelSet.add(r.model)
+      })
+
       return {
         branches: (branches.data ?? []).map((r: { code: string }) => r.code),
         aes:      (aes.data ?? []).map((r: { code: string }) => r.code),
-        brands:   (brands.data ?? []).map((r: { name: string }) => r.name),
-        models:   (models.data ?? []).map((r: { name: string }) => r.name),
+        brands:   Array.from(brandSet).sort(),
+        models:   Array.from(modelSet).sort(),
       }
     },
   })
 }
 
-// ── Add lookup value ───────────────────────────────────────────────
+// ── Add lookup value (branches / aes only) ────────────────────────
+// brands & models are managed through the Sales Portal catalog now.
 export function useAddLookup() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ table, value }: { table: 'branches' | 'aes' | 'brands' | 'models'; value: string }) => {
-      const col = table === 'brands' || table === 'models' ? 'name' : 'code'
-      const { error } = await supabase.from(table).insert({ [col]: value } as never)
+    mutationFn: async ({ table, value }: { table: 'branches' | 'aes'; value: string }) => {
+      const { error } = await supabase.from(table).insert({ code: value } as never)
       if (error && !error.message.includes('duplicate')) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['lookups'] }),
   })
 }
 
-// ── Delete lookup value ────────────────────────────────────────────
+// ── Delete lookup value (branches / aes only) ─────────────────────
 export function useDeleteLookup() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ table, value }: { table: 'branches' | 'aes' | 'brands' | 'models'; value: string }) => {
-      const col = table === 'brands' || table === 'models' ? 'name' : 'code'
-      const { error } = await supabase.from(table).delete().eq(col, value)
+    mutationFn: async ({ table, value }: { table: 'branches' | 'aes'; value: string }) => {
+      const { error } = await supabase.from(table).delete().eq('code', value)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['lookups'] }),

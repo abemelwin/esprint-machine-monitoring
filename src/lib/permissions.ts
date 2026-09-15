@@ -1,7 +1,8 @@
 import type { RolePerms, UserProfileWithRole } from '../types/database'
 
 export function getPerms(user: UserProfileWithRole | null): Required<RolePerms> {
-  const p = user?.role?.perms ?? {}
+  // Permissions come from inv_role (renamed from "role" in old schema)
+  const p = user?.inv_role?.perms ?? {}
   return {
     edit:        !!p.edit,
     reserve:     !!p.reserve,

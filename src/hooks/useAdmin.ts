@@ -1,18 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, createIsolatedAuthClient } from '../lib/supabase'
-import type { Role, RolePerms, UserProfile, UserProfileWithRole } from '../types/database'
+import type { InvRole, RolePerms, UserProfile, UserProfileWithRole } from '../types/database'
 
-export const ROLES_KEY   = ['roles']   as const
-export const USERS_KEY   = ['users']   as const
+export const ROLES_KEY = ['inv_roles'] as const
+export const USERS_KEY = ['users']     as const
 
-// ── Roles ─────────────────────────────────────────────────────────
+// ── Inventory Roles ───────────────────────────────────────────────
 export function useRoles() {
   return useQuery({
     queryKey: ROLES_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*').order('label')
+      const { data, error } = await supabase.from('inv_roles').select('*').order('label')
       if (error) throw error
-      return data as Role[]
+      return data as InvRole[]
     },
   })
 }
@@ -22,11 +22,11 @@ export function useSaveRole() {
   return useMutation({
     mutationFn: async ({ id, key, label, perms }: { id?: string; key?: string; label: string; perms: RolePerms }) => {
       if (id) {
-        const { error } = await supabase.from('roles').update({ label, perms }).eq('id', id)
+        const { error } = await supabase.from('inv_roles').update({ label, perms }).eq('id', id)
         if (error) throw error
       } else {
         const slugKey = key ?? label.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_')
-        const { error } = await supabase.from('roles').insert({ key: slugKey, label, perms })
+        const { error } = await supabase.from('inv_roles').insert({ key: slugKey, label, perms })
         if (error) throw error
       }
     },
@@ -38,7 +38,7 @@ export function useDeleteRole() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('roles').delete().eq('id', id)
+      const { error } = await supabase.from('inv_roles').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ROLES_KEY }),
@@ -50,9 +50,12 @@ export function useUsers() {
   return useQuery({
     queryKey: USERS_KEY,
     queryFn: async () => {
+      // Only show Machine Monitoring members. Sales Portal-only users
+      // (is_sp_member without is_mm_member) are hidden from this panel.
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('*, role:roles(*)')
+        .select('*, inv_role:inv_roles!user_profiles_inv_role_key_fkey(*)')
+        .eq('is_mm_member', true)
         .order('username')
       if (error) throw error
       return data as UserProfileWithRole[]
@@ -66,7 +69,7 @@ export function useCreateUser() {
     mutationFn: async (payload: {
       email: string
       display_name: string
-      role_key: string
+      inv_role_key: string
       password: string
       ae_code: string | null
       approved_aes: string[]
@@ -74,14 +77,14 @@ export function useCreateUser() {
       const cleanEmail = payload.email.toLowerCase().trim()
       const isolatedClient = createIsolatedAuthClient()
 
-      // Sign up via isolated client so existing session isn't replaced
+      // Sign up via isolated client so existing admin session isn't replaced
       const { data: authData, error: authErr } = await isolatedClient.auth.signUp({
         email: cleanEmail,
         password: payload.password,
         options: {
           data: {
             display_name: payload.display_name,
-            role_key: payload.role_key,
+            inv_role_key: payload.inv_role_key,
           },
         },
       })
@@ -91,15 +94,17 @@ export function useCreateUser() {
       const uid = authData.user.id
       const username = cleanEmail.split('@')[0]
 
-      // Save/upsert user profile
+      // Upsert into shared user_profiles — use user_id (SP's FK column).
+      // is_mm_member = true so this person shows in the MM Users panel.
       const { error: profErr } = await supabase.from('user_profiles').upsert({
-        id: uid,
+        user_id:      uid,
         username,
         display_name: payload.display_name,
-        role_key: payload.role_key,
-        ae_code: payload.ae_code,
+        inv_role_key: payload.inv_role_key,
+        ae_code:      payload.ae_code,
         approved_aes: payload.approved_aes,
-      } as UserProfile)
+        is_mm_member: true,
+      } as Partial<UserProfile>)
 
       if (profErr) throw profErr
     },
@@ -111,19 +116,19 @@ export function useUpdateUser() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (payload: {
-      id: string
+      user_id: string
       display_name: string
-      role_key: string
+      inv_role_key: string
       ae_code: string | null
       approved_aes: string[]
       password?: string
     }) => {
       const { error } = await supabase.from('user_profiles').update({
         display_name: payload.display_name,
-        role_key:     payload.role_key,
+        inv_role_key: payload.inv_role_key,
         ae_code:      payload.ae_code,
         approved_aes: payload.approved_aes,
-      }).eq('id', payload.id)
+      }).eq('user_id', payload.user_id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
@@ -133,11 +138,36 @@ export function useUpdateUser() {
 export function useDeleteUser() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('user_profiles').delete().eq('id', id)
-      if (error) throw error
+    mutationFn: async (user_id: string) => {
+      // Removing a user from Machine Monitoring must NOT destroy the shared
+      // account (they may also be a Sales Portal member). We look up whether
+      // they belong to SP: if yes, just drop their MM membership; if not,
+      // it's an MM-only account and we can delete the profile row.
+      const { data: prof, error: readErr } = await supabase
+        .from('user_profiles')
+        .select('is_sp_member')
+        .eq('user_id', user_id)
+        .single()
+      if (readErr) throw readErr
+
+      if (prof?.is_sp_member) {
+        // Shared account — clear only the MM membership/fields, keep SP access.
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            is_mm_member: false,
+            inv_role_key: null,
+            ae_code:      null,
+            approved_aes: [],
+          })
+          .eq('user_id', user_id)
+        if (error) throw error
+      } else {
+        // MM-only account — safe to remove the profile row entirely.
+        const { error } = await supabase.from('user_profiles').delete().eq('user_id', user_id)
+        if (error) throw error
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   })
 }
-

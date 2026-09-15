@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useRoles, useUsers, useSaveRole, useDeleteRole, useCreateUser, useUpdateUser, useDeleteUser } from '../../hooks/useAdmin'
 import { useAuth } from '../../hooks/useAuth'
 import { PERM_DEFS } from '../../lib/constants'
-import type { Role, RolePerms, UserProfileWithRole } from '../../types/database'
+import type { InvRole, RolePerms, UserProfileWithRole } from '../../types/database'
 import { Button } from '../ui/Button'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { Field, Grid2, Input, Select, Banner } from '../ui/Field'
@@ -35,10 +35,10 @@ function RolesTab() {
   const { data: users = [] } = useUsers()
   const saveRole   = useSaveRole()
   const deleteRole = useDeleteRole()
-  const [editTarget, setEditTarget] = useState<Role | null | 'new'>(null)
+  const [editTarget, setEditTarget] = useState<InvRole | null | 'new'>(null)
 
-  const handleDelete = (r: Role) => {
-    const inUse = users.filter(u => u.role_key === r.key).length
+  const handleDelete = (r: InvRole) => {
+    const inUse = users.filter(u => u.inv_role_key === r.key).length
     if (inUse) { alert(`Cannot delete "${r.label}" — ${inUse} user(s) assigned. Reassign them first.`); return }
     if (!window.confirm(`Delete role "${r.label}"?`)) return
     deleteRole.mutate(r.id)
@@ -60,7 +60,7 @@ function RolesTab() {
           </tr></thead>
           <tbody>
             {roles.map(r => {
-              const nUsers = users.filter(u => u.role_key === r.key).length
+              const nUsers = users.filter(u => u.inv_role_key === r.key).length
               const tags = permSummary(r.perms)
               return (
                 <tr key={r.id}>
@@ -93,7 +93,7 @@ function RolesTab() {
           onClose={() => setEditTarget(null)}
           onSave={(label, perms) => {
             saveRole.mutate(
-              editTarget === 'new' ? { label, perms } : { id: (editTarget as Role).id, label, perms },
+              editTarget === 'new' ? { label, perms } : { id: (editTarget as InvRole).id, label, perms },
               { onSuccess: () => setEditTarget(null) }
             )
           }}
@@ -104,7 +104,12 @@ function RolesTab() {
   )
 }
 
-function RoleForm({ role, onClose, onSave, loading }: { role: Role | null; onClose: () => void; onSave: (label: string, perms: RolePerms) => void; loading: boolean }) {
+function RoleForm({ role, onClose, onSave, loading }: {
+  role: InvRole | null
+  onClose: () => void
+  onSave: (label: string, perms: RolePerms) => void
+  loading: boolean
+}) {
   const [label, setLabel] = useState(role?.label ?? '')
   const [perms, setPerms] = useState<RolePerms>(role?.perms ?? {})
   const [err,   setErr]   = useState('')
@@ -154,9 +159,9 @@ function UsersTab() {
   const [editTarget, setEditTarget] = useState<UserProfileWithRole | null | 'new'>(null)
 
   const handleDelete = (u: UserProfileWithRole) => {
-    if (u.id === currentUser?.id) { alert('You cannot delete your own account.'); return }
+    if (u.user_id === currentUser?.user_id) { alert('You cannot delete your own account.'); return }
     if (!window.confirm(`Delete user "${u.username}"?`)) return
-    deleteUser.mutate(u.id)
+    deleteUser.mutate(u.user_id)
   }
 
   const thCls = 'bg-[var(--surface-2)] text-left px-3 py-2.5 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wide border-b border-[var(--border)]'
@@ -164,7 +169,7 @@ function UsersTab() {
 
   return (
     <>
-      <Banner>Each person signs in with their own username &amp; password. Assign a <b>Role</b> and set <b>AE access</b> for client visibility.</Banner>
+      <Banner>Each person signs in with their own email &amp; password. Assign a <b>Role</b> and set <b>AE access</b> for client visibility.</Banner>
       <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
         <table className="w-full border-collapse">
           <thead><tr>
@@ -176,17 +181,17 @@ function UsersTab() {
           </tr></thead>
           <tbody>
             {users.map(u => {
-              const rl = u.role
+              const rl = u.inv_role
               const aeAccess = (rl?.perms?.viewClient)
                 ? 'All clients'
                 : [...(u.ae_code ? [u.ae_code] : []), ...(u.approved_aes ?? [])].filter(Boolean).join(', ') || '—'
               return (
-                <tr key={u.id}>
-                  <td className={`${tdCls} font-mono font-semibold`}>{u.username}</td>
+                <tr key={u.user_id}>
+                  <td className={`${tdCls} font-mono font-semibold`}>{u.username ?? u.email ?? u.user_id}</td>
                   <td className={tdCls}>{u.display_name || <span className="text-[var(--text-muted)]">—</span>}</td>
                   <td className={tdCls}>
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-[650] bg-[var(--surface-2)] text-[var(--text-secondary)]">
-                      {rl?.label ?? u.role_key}
+                      {rl?.label ?? u.inv_role_key ?? '—'}
                     </span>
                   </td>
                   <td className={`${tdCls} text-[11.5px] text-[var(--text-muted)]`}>{aeAccess}</td>
@@ -214,7 +219,7 @@ function UsersTab() {
             if (editTarget === 'new') {
               await createUser.mutateAsync(data as Parameters<typeof createUser.mutate>[0])
             } else {
-              await updateUser.mutateAsync({ id: (editTarget as UserProfileWithRole).id, ...data })
+              await updateUser.mutateAsync({ user_id: (editTarget as UserProfileWithRole).user_id, ...data })
             }
             setEditTarget(null)
           }}
@@ -227,15 +232,23 @@ function UsersTab() {
 
 function UserForm({ user, roles, aes, onClose, onSave, loading }: {
   user: UserProfileWithRole | null
-  roles: Role[]; aes: string[]
+  roles: InvRole[]
+  aes: string[]
   onClose: () => void
-  onSave: (data: { email: string; display_name: string; role_key: string; password: string; ae_code: string | null; approved_aes: string[] }) => Promise<void>
+  onSave: (data: {
+    email: string
+    display_name: string
+    inv_role_key: string
+    password: string
+    ae_code: string | null
+    approved_aes: string[]
+  }) => Promise<void>
   loading: boolean
 }) {
   const isEdit = !!user
-  const [email,       setEmail]       = useState(user ? `${user.username}@esprintmedia.com` : '')
+  const [email,       setEmail]       = useState(user ? `${user.username ?? ''}@esprintmedia.com` : '')
   const [displayName, setDisplayName] = useState(user?.display_name ?? '')
-  const [roleKey,     setRoleKey]     = useState(user?.role_key ?? roles[0]?.key ?? '')
+  const [roleKey,     setRoleKey]     = useState(user?.inv_role_key ?? roles[0]?.key ?? '')
   const [password,    setPassword]    = useState('')
   const [aeCode,      setAeCode]      = useState(user?.ae_code ?? '')
   const [approvedAEs, setApprovedAEs] = useState<string[]>(user?.approved_aes ?? [])
@@ -244,23 +257,14 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
   const toggleAE = (ae: string) => setApprovedAEs(prev => prev.includes(ae) ? prev.filter(a => a !== ae) : [...prev, ae])
 
   const handleSave = async () => {
-    if (!email.trim()) {
-      setErr('Please enter an email.')
-      return
-    }
-    if (!isEdit && !password) {
-      setErr('Please set a password.')
-      return
-    }
-    if (!isEdit && password.length < 6) {
-      setErr('Password must be at least 6 characters.')
-      return
-    }
+    if (!email.trim()) { setErr('Please enter an email.'); return }
+    if (!isEdit && !password) { setErr('Please set a password.'); return }
+    if (!isEdit && password.length < 6) { setErr('Password must be at least 6 characters.'); return }
     setErr('')
     try {
-      await onSave({ email, display_name: displayName, role_key: roleKey, password, ae_code: aeCode || null, approved_aes: approvedAEs })
-    } catch (e: any) {
-      setErr(e?.message || 'Failed to save user.')
+      await onSave({ email, display_name: displayName, inv_role_key: roleKey, password, ae_code: aeCode || null, approved_aes: approvedAEs })
+    } catch (e: unknown) {
+      setErr((e as Error)?.message || 'Failed to save user.')
     }
   }
 

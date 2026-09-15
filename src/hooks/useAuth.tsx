@@ -24,24 +24,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient()
 
   const loadProfile = useCallback(async (uid: string) => {
+    // SP user_profiles uses user_id (not id) as the auth FK.
+    // We join inv_role via inv_role_key → inv_roles table.
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('*, role:roles(*)')
-      .eq('id', uid)
+      .select('*, inv_role:inv_roles!user_profiles_inv_role_key_fkey(*)')
+      .eq('user_id', uid)
       .single()
     if (error || !data) { setUser(null); return }
     setUser(data as UserProfileWithRole)
   }, [])
 
   useEffect(() => {
-    // Check existing session
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabase.auth.getSession().then(({ data: { session } }: any) => {
       if (session?.user) loadProfile(session.user.id).finally(() => setLoading(false))
       else setLoading(false)
     })
 
-    // Listen for auth changes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session?.user) {
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else { setUser(null); setLoading(false) }
     })
     return () => subscription.unsubscribe()
-  }, [loadProfile])
+  }, [loadProfile, qc])
 
   const login = async (email: string, password: string): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithPassword({ email: email.toLowerCase().trim(), password })
