@@ -160,7 +160,7 @@ function UsersTab() {
 
   const handleDelete = (u: UserProfileWithRole) => {
     if (u.user_id === currentUser?.user_id) { alert('You cannot delete your own account.'); return }
-    if (!window.confirm(`Delete user "${u.username}"?`)) return
+    if (!window.confirm(`Delete user "${u.email ?? u.display_name}"?`)) return
     deleteUser.mutate(u.user_id)
   }
 
@@ -173,7 +173,7 @@ function UsersTab() {
       <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
         <table className="w-full border-collapse">
           <thead><tr>
-            <th className={thCls}>Username</th>
+            <th className={thCls}>Email</th>
             <th className={thCls}>Name</th>
             <th className={thCls}>Role</th>
             <th className={thCls}>Client access</th>
@@ -187,7 +187,7 @@ function UsersTab() {
                 : [...(u.ae_code ? [u.ae_code] : []), ...(u.approved_aes ?? [])].filter(Boolean).join(', ') || '—'
               return (
                 <tr key={u.user_id}>
-                  <td className={`${tdCls} font-mono font-semibold`}>{u.username ?? u.email ?? u.user_id}</td>
+                  <td className={`${tdCls} font-mono font-semibold`}>{u.email ?? u.username ?? u.user_id}</td>
                   <td className={tdCls}>{u.display_name || <span className="text-[var(--text-muted)]">—</span>}</td>
                   <td className={tdCls}>
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-[650] bg-[var(--surface-2)] text-[var(--text-secondary)]">
@@ -246,7 +246,7 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
   loading: boolean
 }) {
   const isEdit = !!user
-  const [email,       setEmail]       = useState(user ? `${user.username ?? ''}@esprintmedia.com` : '')
+  const [email,       setEmail]       = useState(user?.email ?? '')
   const [displayName, setDisplayName] = useState(user?.display_name ?? '')
   const [roleKey,     setRoleKey]     = useState(user?.inv_role_key ?? roles[0]?.key ?? '')
   const [password,    setPassword]    = useState('')

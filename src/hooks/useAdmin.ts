@@ -92,13 +92,14 @@ export function useCreateUser() {
       if (!authData.user) throw new Error('User creation failed: No user returned.')
 
       const uid = authData.user.id
-      const username = cleanEmail.split('@')[0]
 
       // Upsert into shared user_profiles — use user_id (SP's FK column).
+      // Login is by email, so username = email for consistency.
       // is_mm_member = true so this person shows in the MM Users panel.
       const { error: profErr } = await supabase.from('user_profiles').upsert({
         user_id:      uid,
-        username,
+        username:     cleanEmail,
+        email:        cleanEmail,
         display_name: payload.display_name,
         inv_role_key: payload.inv_role_key,
         ae_code:      payload.ae_code,
