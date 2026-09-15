@@ -146,16 +146,26 @@ export function useLookups() {
       // Machine Monitoring owns its own brands/models/branches/aes lists.
       // These are separate from the Sales Portal machine catalog so the
       // MM team can manage their own inventory brand/model values.
-      const [branches, aes, brands, models] = await Promise.all([
+      const [branches, aes, brands, models, profiles] = await Promise.all([
         supabase.from('branches').select('code').order('code'),
         supabase.from('aes').select('code').order('code'),
         supabase.from('brands').select('name').order('name'),
         supabase.from('models').select('name').order('name'),
+        supabase.from('user_profiles').select('ae_code').not('ae_code', 'is', null),
       ])
+
+      const mergedAes = Array.from(
+        new Set([
+          ...(aes.data ?? []).map((r: { code: string }) => r.code),
+          ...(profiles.data ?? []).map((r: { ae_code: string }) => r.ae_code),
+        ])
+      )
+        .filter(Boolean)
+        .sort((a, b) => (a as string).localeCompare(b as string))
 
       return {
         branches: (branches.data ?? []).map((r: { code: string }) => r.code),
-        aes:      (aes.data ?? []).map((r: { code: string }) => r.code),
+        aes:      mergedAes as string[],
         brands:   (brands.data ?? []).map((r: { name: string }) => r.name),
         models:   (models.data ?? []).map((r: { name: string }) => r.name),
       }

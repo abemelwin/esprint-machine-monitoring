@@ -43,9 +43,9 @@ export function LookupSelect({ kind, value, onChange, placeholder, id }: Props) 
     setOpen(false)
   }
 
-  // All lookup kinds (branches, AEs, brands, models) are owned and
-  // editable by Machine Monitoring.
-  const isEditable = true
+  // AEs are strictly tied to existing registered users, so adding or deleting
+  // ad-hoc AE codes from here is disabled. Branches, brands, and models remain editable.
+  const isEditable = kind !== 'aes'
 
   const handleAdd = async () => {
     const newVal = window.prompt(`Add a new ${LABELS[kind]}:`)?.trim()
