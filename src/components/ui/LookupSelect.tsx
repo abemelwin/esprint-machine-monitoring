@@ -43,12 +43,11 @@ export function LookupSelect({ kind, value, onChange, placeholder, id }: Props) 
     setOpen(false)
   }
 
-  // Only branches & AEs are editable here. Brands & models are sourced from
-  // the shared Sales Portal machine catalog and are read-only in this app.
-  const isEditable = kind === 'branches' || kind === 'aes'
+  // All lookup kinds (branches, AEs, brands, models) are owned and
+  // editable by Machine Monitoring.
+  const isEditable = true
 
   const handleAdd = async () => {
-    if (!isEditable) return
     const newVal = window.prompt(`Add a new ${LABELS[kind]}:`)?.trim()
     if (!newVal) return
     await addLookup.mutateAsync({ table: kind, value: newVal })
@@ -58,7 +57,6 @@ export function LookupSelect({ kind, value, onChange, placeholder, id }: Props) 
 
   const handleDelete = async (e: React.MouseEvent, v: string) => {
     e.stopPropagation()
-    if (!isEditable) return
     if (!window.confirm(`Delete "${v}" from the list? This won't affect existing machines that use it.`)) return
     await deleteLookup.mutateAsync({ table: kind, value: v })
     if (value === v) onChange('')

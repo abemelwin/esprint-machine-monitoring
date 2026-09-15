@@ -145,6 +145,8 @@ export type Database = {
       }
       branches: { Row: { id: number; code: string }; Insert: { code: string }; Update: { code?: string } }
       aes:      { Row: { id: number; code: string }; Insert: { code: string }; Update: { code?: string } }
+      brands:   { Row: { id: number; name: string }; Insert: { name: string }; Update: { name?: string } }
+      models:   { Row: { id: number; name: string }; Insert: { name: string }; Update: { name?: string } }
     }
     Functions: {
       has_inv_perm: { Args: { perm: string }; Returns: boolean }

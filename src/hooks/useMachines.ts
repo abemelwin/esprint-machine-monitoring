@@ -143,49 +143,46 @@ export function useLookups() {
   return useQuery({
     queryKey: ['lookups'],
     queryFn: async () => {
-      const [branches, aes, catalogMachines] = await Promise.all([
+      // Machine Monitoring owns its own brands/models/branches/aes lists.
+      // These are separate from the Sales Portal machine catalog so the
+      // MM team can manage their own inventory brand/model values.
+      const [branches, aes, brands, models] = await Promise.all([
         supabase.from('branches').select('code').order('code'),
         supabase.from('aes').select('code').order('code'),
-        supabase.from('machines').select('brand, model').eq('is_active', true).order('brand').order('model'),
+        supabase.from('brands').select('name').order('name'),
+        supabase.from('models').select('name').order('name'),
       ])
-
-      // Derive unique brands & models from the shared catalog
-      const brandSet  = new Set<string>()
-      const modelSet  = new Set<string>()
-      ;(catalogMachines.data ?? []).forEach((r: { brand: string; model: string }) => {
-        if (r.brand) brandSet.add(r.brand)
-        if (r.model) modelSet.add(r.model)
-      })
 
       return {
         branches: (branches.data ?? []).map((r: { code: string }) => r.code),
         aes:      (aes.data ?? []).map((r: { code: string }) => r.code),
-        brands:   Array.from(brandSet).sort(),
-        models:   Array.from(modelSet).sort(),
+        brands:   (brands.data ?? []).map((r: { name: string }) => r.name),
+        models:   (models.data ?? []).map((r: { name: string }) => r.name),
       }
     },
   })
 }
 
-// ── Add lookup value (branches / aes only) ────────────────────────
-// brands & models are managed through the Sales Portal catalog now.
+// ── Add lookup value (branches / aes / brands / models) ───────────
 export function useAddLookup() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ table, value }: { table: 'branches' | 'aes'; value: string }) => {
-      const { error } = await supabase.from(table).insert({ code: value } as never)
+    mutationFn: async ({ table, value }: { table: 'branches' | 'aes' | 'brands' | 'models'; value: string }) => {
+      const col = table === 'brands' || table === 'models' ? 'name' : 'code'
+      const { error } = await supabase.from(table).insert({ [col]: value } as never)
       if (error && !error.message.includes('duplicate')) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['lookups'] }),
   })
 }
 
-// ── Delete lookup value (branches / aes only) ─────────────────────
+// ── Delete lookup value (branches / aes / brands / models) ────────
 export function useDeleteLookup() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ table, value }: { table: 'branches' | 'aes'; value: string }) => {
-      const { error } = await supabase.from(table).delete().eq('code', value)
+    mutationFn: async ({ table, value }: { table: 'branches' | 'aes' | 'brands' | 'models'; value: string }) => {
+      const col = table === 'brands' || table === 'models' ? 'name' : 'code'
+      const { error } = await supabase.from(table).delete().eq(col, value)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['lookups'] }),
