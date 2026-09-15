@@ -291,6 +291,20 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
   const [approvedAEs, setApprovedAEs] = useState<string[]>(user?.approved_aes ?? [])
   const [err,         setErr]         = useState('')
 
+  const handleDisplayNameChange = (val: string) => {
+    setDisplayName(val)
+    // Auto-suggest last name as AE code if creating new user and AE code is currently empty or was derived
+    if (!isEdit) {
+      const parts = val.trim().split(/\s+/)
+      if (parts.length > 0) {
+        const last = parts[parts.length - 1].replace(/[^a-zA-ZñÑáéíóúÁÉÍÓÚ-]/g, '').toUpperCase()
+        if (last && (!aeCode || parts.some(p => p.toUpperCase() === aeCode))) {
+          setAeCode(last)
+        }
+      }
+    }
+  }
+
   const toggleAE = (ae: string) => setApprovedAEs(prev => prev.includes(ae) ? prev.filter(a => a !== ae) : [...prev, ae])
 
   const handleSave = async () => {
@@ -299,7 +313,7 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
     if (!isEdit && password.length < 6) { setErr('Password must be at least 6 characters.'); return }
     setErr('')
     try {
-      await onSave({ email, display_name: displayName, inv_role_key: roleKey, password, ae_code: aeCode || null, approved_aes: approvedAEs })
+      await onSave({ email, display_name: displayName, inv_role_key: roleKey, password, ae_code: aeCode.trim().toUpperCase() || null, approved_aes: approvedAEs })
     } catch (e: unknown) {
       setErr((e as Error)?.message || 'Failed to save user.')
     }
@@ -314,7 +328,7 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
             <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="user@esprintmedia.com" readOnly={isEdit} />
           </Field>
           <Field label="Display Name">
-            <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Full name" />
+            <Input value={displayName} onChange={e => handleDisplayNameChange(e.target.value)} placeholder="Full name (e.g. Angelica Moreno)" />
           </Field>
         </Grid2>
         <Grid2>
@@ -328,14 +342,21 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
           </Field>
         </Grid2>
         <Banner>
-          Set an <b>Own AE code</b> for Account Executives. Pick <b>Approved AEs</b> for Managers / Team Leaders. Full-access roles see all clients.
+          Set an <b>Own AE code</b> (Last Name) for Account Executives. Pick <b>Approved AEs</b> for Managers / Team Leaders. Full-access roles see all clients.
         </Banner>
         <Grid2>
-          <Field label="Own AE code" hint="For Account Executives — their own AE.">
-            <Select value={aeCode} onChange={e => setAeCode(e.target.value)}>
-              <option value="">— none —</option>
-              {aes.map(a => <option key={a} value={a}>{a}</option>)}
-            </Select>
+          <Field label="Own AE code (Last name)" hint="AE's Last Name (e.g. MORENO, MARCO)">
+            <div className="relative">
+              <Input
+                list="ae-codes-list"
+                value={aeCode}
+                onChange={e => setAeCode(e.target.value.toUpperCase())}
+                placeholder="e.g. MORENO"
+              />
+              <datalist id="ae-codes-list">
+                {aes.map(a => <option key={a} value={a} />)}
+              </datalist>
+            </div>
           </Field>
           <Field label="Approved AEs (multi-select)">
             <div className="flex flex-col gap-1.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[9px] p-2.5 max-h-28 overflow-y-auto">

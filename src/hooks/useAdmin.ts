@@ -93,6 +93,11 @@ export function useCreateUser() {
 
       const uid = authData.user.id
 
+      const cleanAe = payload.ae_code ? payload.ae_code.trim().toUpperCase() : null
+      if (cleanAe) {
+        await supabase.from('aes').insert({ code: cleanAe } as never).select().maybeSingle()
+      }
+
       // Upsert into shared user_profiles — use user_id (SP's FK column).
       // Login is by email, so username = email for consistency.
       // is_mm_member = true so this person shows in the MM Users panel.
@@ -102,14 +107,17 @@ export function useCreateUser() {
         email:        cleanEmail,
         display_name: payload.display_name,
         inv_role_key: payload.inv_role_key,
-        ae_code:      payload.ae_code,
+        ae_code:      cleanAe,
         approved_aes: payload.approved_aes,
         is_mm_member: true,
       } as Partial<UserProfile>)
 
       if (profErr) throw profErr
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: USERS_KEY })
+      qc.invalidateQueries({ queryKey: ['lookups'] })
+    },
   })
 }
 
@@ -124,15 +132,23 @@ export function useUpdateUser() {
       approved_aes: string[]
       password?: string
     }) => {
+      const cleanAe = payload.ae_code ? payload.ae_code.trim().toUpperCase() : null
+      if (cleanAe) {
+        await supabase.from('aes').insert({ code: cleanAe } as never).select().maybeSingle()
+      }
+
       const { error } = await supabase.from('user_profiles').update({
         display_name: payload.display_name,
         inv_role_key: payload.inv_role_key,
-        ae_code:      payload.ae_code,
+        ae_code:      cleanAe,
         approved_aes: payload.approved_aes,
       }).eq('user_id', payload.user_id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: USERS_KEY })
+      qc.invalidateQueries({ queryKey: ['lookups'] })
+    },
   })
 }
 
