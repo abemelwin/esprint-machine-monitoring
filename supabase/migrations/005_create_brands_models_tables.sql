@@ -1,6 +1,6 @@
 -- ============================================================
 -- 005_create_brands_models_tables.sql
--- Create standalone brands and models lookup tables with RLS
+-- Create standalone brands and models lookup tables strictly for Machine Monitoring
 -- Run in: Supabase Dashboard → SQL Editor
 -- ============================================================
 
@@ -43,7 +43,11 @@ DROP POLICY IF EXISTS "Authenticated users can delete models" ON public.models;
 CREATE POLICY "Authenticated users can delete models" ON public.models
   FOR DELETE TO authenticated USING (true);
 
--- Pre-populate brands and models from existing inventory_units
+-- Clear any foreign catalog items
+DELETE FROM public.brands;
+DELETE FROM public.models;
+
+-- Pre-populate brands and models ONLY from actual Machine Monitoring inventory_units
 INSERT INTO public.brands (name)
 SELECT DISTINCT brand
 FROM public.inventory_units
@@ -55,17 +59,3 @@ SELECT DISTINCT model
 FROM public.inventory_units
 WHERE model IS NOT NULL AND trim(model) <> ''
 ON CONFLICT (name) DO NOTHING;
-
--- Also copy from Sales Portal machines catalog if present
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'machines') THEN
-    INSERT INTO public.brands (name)
-    SELECT DISTINCT brand FROM public.machines WHERE brand IS NOT NULL AND trim(brand) <> ''
-    ON CONFLICT (name) DO NOTHING;
-
-    INSERT INTO public.models (name)
-    SELECT DISTINCT model FROM public.machines WHERE model IS NOT NULL AND trim(model) <> ''
-    ON CONFLICT (name) DO NOTHING;
-  END IF;
-END $$;
