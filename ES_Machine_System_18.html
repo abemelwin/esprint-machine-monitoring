@@ -1117,7 +1117,7 @@ function openAdmin(tab){
      </tr>`;}).join('');
     body=tabs+`<div class="banner">Each person signs in with their own username &amp; password, assigned one <b>Role</b> (what they can do) plus <b>AE access</b> (whose client names they can see — set on each user).</div>
       <div class="table-card"><div class="table-scroll" style="max-height:44vh"><table>
-        <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Client access (AEs)</th><th style="text-align:right">Actions</th></tr></thead>
+        <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>AE Codes</th><th style="text-align:right">Actions</th></tr></thead>
         <tbody>${rows}</tbody></table></div></div>`;
     openModal(`<div class="mhead"><h2>Access Control</h2><button class="x" onclick="closeModal()">×</button></div>
       <div class="mbody">${body}</div>

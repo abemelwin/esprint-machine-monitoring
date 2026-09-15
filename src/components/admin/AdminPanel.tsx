@@ -213,7 +213,7 @@ function UsersTab() {
             <th className={thCls}>Email</th>
             <th className={thCls}>Name</th>
             <th className={thCls}>Role</th>
-            <th className={thCls}>Client access</th>
+            <th className={thCls}>AE Codes</th>
             <th className={`${thCls} text-right`}>Actions</th>
           </tr></thead>
           <tbody>
