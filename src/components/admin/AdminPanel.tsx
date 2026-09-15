@@ -221,7 +221,11 @@ function UsersTab() {
               const rl = u.inv_role
               const aeAccess = (rl?.perms?.viewClient)
                 ? 'All clients'
-                : [...(u.ae_code ? [u.ae_code] : []), ...(u.approved_aes ?? [])].filter(Boolean).join(', ') || '—'
+                : (u.inv_role_key === 'account_exec' || u.role === 'account_executive')
+                  ? (u.ae_code || '—')
+                  : (u.approved_aes && u.approved_aes.length > 0)
+                    ? u.approved_aes.join(', ')
+                    : '—'
               return (
                 <tr key={u.user_id}>
                   <td className={`${tdCls} font-mono font-semibold`}>{u.email ?? u.username ?? u.user_id}</td>
@@ -291,10 +295,12 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
   const [approvedAEs, setApprovedAEs] = useState<string[]>(user?.approved_aes ?? [])
   const [err,         setErr]         = useState('')
 
+  const isAccountExec = roleKey === 'account_exec'
+
   const handleDisplayNameChange = (val: string) => {
     setDisplayName(val)
-    // Auto-suggest last name as AE code if creating new user and AE code is currently empty or was derived
-    if (!isEdit) {
+    // Auto-suggest last name as AE code if creating new Account Executive
+    if (!isEdit && isAccountExec) {
       const parts = val.trim().split(/\s+/)
       if (parts.length > 0) {
         const last = parts[parts.length - 1].replace(/[^a-zA-ZñÑáéíóúÁÉÍÓÚ-]/g, '').toUpperCase()
@@ -302,6 +308,19 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
           setAeCode(last)
         }
       }
+    }
+  }
+
+  const handleRoleChange = (newRole: string) => {
+    setRoleKey(newRole)
+    if (newRole === 'account_exec') {
+      if (!aeCode && displayName) {
+        const parts = displayName.trim().split(/\s+/)
+        const last = parts[parts.length - 1].replace(/[^a-zA-ZñÑáéíóúÁÉÍÓÚ-]/g, '').toUpperCase()
+        if (last) setAeCode(last)
+      }
+    } else {
+      setAeCode('')
     }
   }
 
@@ -313,7 +332,8 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
     if (!isEdit && password.length < 6) { setErr('Password must be at least 6 characters.'); return }
     setErr('')
     try {
-      await onSave({ email, display_name: displayName, inv_role_key: roleKey, password, ae_code: aeCode.trim().toUpperCase() || null, approved_aes: approvedAEs })
+      const finalAe = isAccountExec && aeCode.trim() ? aeCode.trim().toUpperCase() : null
+      await onSave({ email, display_name: displayName, inv_role_key: roleKey, password, ae_code: finalAe, approved_aes: approvedAEs })
     } catch (e: unknown) {
       setErr((e as Error)?.message || 'Failed to save user.')
     }
@@ -333,7 +353,7 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
         </Grid2>
         <Grid2>
           <Field label="Role" required>
-            <Select value={roleKey} onChange={e => setRoleKey(e.target.value)}>
+            <Select value={roleKey} onChange={e => handleRoleChange(e.target.value)}>
               {roles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
             </Select>
           </Field>
@@ -345,13 +365,17 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
           Set an <b>Own AE code</b> (Last Name) for Account Executives. Pick <b>Approved AEs</b> for Managers / Team Leaders. Full-access roles see all clients.
         </Banner>
         <Grid2>
-          <Field label="Own AE code (Last name)" hint="AE's Last Name (e.g. MORENO, MARCO)">
+          <Field
+            label="Own AE code (Last name)"
+            hint={isAccountExec ? "AE's Last Name (e.g. MORENO, MARCO)" : "Only applicable for Account Executives"}
+          >
             <div className="relative">
               <Input
                 list="ae-codes-list"
                 value={aeCode}
+                disabled={!isAccountExec}
                 onChange={e => setAeCode(e.target.value.toUpperCase())}
-                placeholder="e.g. MORENO"
+                placeholder={isAccountExec ? "e.g. MORENO" : "— N/A for this role —"}
               />
               <datalist id="ae-codes-list">
                 {aes.map(a => <option key={a} value={a} />)}
