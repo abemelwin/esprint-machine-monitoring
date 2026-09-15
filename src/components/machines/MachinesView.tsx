@@ -63,10 +63,12 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     if (q.trim()) {
       const lq = q.toLowerCase()
       rows = rows.filter(m => {
-        const base = ['serial_no','po_no','model','brand','client_code','branch','ae','notes']
+        const base = ['serial_no','po_no','model','brand','branch','ae','notes']
           .some(k => String((m as Record<string,unknown>)[k] ?? '').toLowerCase().includes(lq))
+        // client_name, client_code and location are only searchable for the
+        // AEs the user is allowed to see clients for.
         const cli = canSeeClient(user, m.ae) &&
-          [m.client_name, m.location].some(v => String(v ?? '').toLowerCase().includes(lq))
+          [m.client_name, m.client_code, m.location].some(v => String(v ?? '').toLowerCase().includes(lq))
         return base || cli
       })
     }
@@ -276,6 +278,10 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
                       if (c.key === 'client_name') {
                         if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE">•••</span></td>
                         return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
+                      }
+                      if (c.key === 'client_code') {
+                        if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE">•••</span></td>
+                        return <td key={c.key} className={tdCls}>{v ? String(v) : DASH}</td>
                       }
                       if (c.key === 'location') {
                         if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]">•••</span></td>

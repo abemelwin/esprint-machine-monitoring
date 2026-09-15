@@ -52,13 +52,19 @@ export function TBAView() {
     let rows = tbaList.slice()
     if (q.trim()) {
       const lq = q.toLowerCase()
-      rows = rows.filter(t => [t.brand, t.model, t.client_name, t.client_code, t.ae, t.location].some(v => String(v ?? '').toLowerCase().includes(lq)))
+      rows = rows.filter(t => {
+        const base = [t.brand, t.model, t.ae].some(v => String(v ?? '').toLowerCase().includes(lq))
+        // client fields only searchable for AEs the user is allowed to see
+        const cli = canSeeClient(user, t.ae) &&
+          [t.client_name, t.client_code, t.location].some(v => String(v ?? '').toLowerCase().includes(lq))
+        return base || cli
+      })
     }
     if (fBrand) rows = rows.filter(t => t.brand === fBrand)
     if (fModel) rows = rows.filter(t => t.model === fModel)
     if (fAE)    rows = rows.filter(t => t.ae    === fAE)
     return rows.sort((a, b) => (a.brand ?? '').localeCompare(b.brand ?? '') || a.model.localeCompare(b.model))
-  }, [tbaList, q, fBrand, fModel, fAE])
+  }, [tbaList, q, fBrand, fModel, fAE, user])
 
   const uniq = (k: keyof TBAItem) => [...new Set(tbaList.map(t => t[k]).filter(Boolean))].sort() as string[]
 
@@ -104,9 +110,11 @@ export function TBAView() {
 
   const cols = [
     { key: 'brand', label: 'Brand' }, { key: 'model', label: 'Model' },
-    ...(!hideCols ? [{ key: 'client_name', label: 'Client Name' }] : []),
-    { key: 'client_code', label: 'Code' },
-    ...(!hideCols ? [{ key: 'location', label: 'Location' }] : []),
+    ...(!hideCols ? [
+      { key: 'client_name', label: 'Client Name' },
+      { key: 'client_code', label: 'Code' },
+      { key: 'location',    label: 'Location' },
+    ] : []),
     { key: 'ae', label: 'AE' }, { key: 'reservation_date', label: 'Reservation Date' }, { key: 'notes', label: 'Notes' },
   ]
 
@@ -170,7 +178,7 @@ export function TBAView() {
                 <tr key={t.id} className="st-tba">
                   {cols.map(c => {
                     const v = (t as Record<string, unknown>)[c.key]
-                    const masked = (c.key === 'client_name' || c.key === 'location') && !canSeeClient(user, t.ae)
+                    const masked = (c.key === 'client_name' || c.key === 'client_code' || c.key === 'location') && !canSeeClient(user, t.ae)
                     if (masked) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]">•••</span></td>
                     if (c.key === 'brand' || c.key === 'model' || c.key === 'client_name') return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
                     if (c.key === 'notes') return <td key={c.key} className={`${tdCls} text-[var(--text-muted)] max-w-[200px] overflow-hidden text-ellipsis`} title={v ? String(v) : undefined}>{v ? String(v) : ''}</td>
