@@ -1,17 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 
 export function LoginPage() {
   const { login } = useAuth()
-  const [email,    setEmail]   = useState('')
+  const [email,    setEmail]   = useState(() => localStorage.getItem('es_last_email') || '')
   const [password, setPassword] = useState('')
   const [error,    setError]   = useState('')
   const [loading,  setLoading] = useState(false)
+  const emailRef    = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (email) {
+      passwordRef.current?.focus()
+    } else {
+      emailRef.current?.focus()
+    }
+  }, [])
 
   const handleLogin = async () => {
     if (!email.trim() || !password) { setError('Please enter your email and password.'); return }
     setLoading(true); setError('')
-    const err = await login(email, password)
+    const cleanEmail = email.trim()
+    localStorage.setItem('es_last_email', cleanEmail)
+    const err = await login(cleanEmail, password)
     setLoading(false)
     if (err) {
       if (err.toLowerCase().includes('email not confirmed')) {
@@ -39,19 +51,23 @@ export function LoginPage() {
         <div className="text-left mb-3">
           <label className="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1.5">Email</label>
           <input
+            ref={emailRef}
             type="email"
             className="w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2.5 rounded-[9px] text-[13.5px] focus:outline-none focus:border-[var(--accent)]"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={e => {
+              setEmail(e.target.value)
+              localStorage.setItem('es_last_email', e.target.value)
+            }}
             onKeyDown={onKey}
             autoComplete="email"
             placeholder="you@esprintmedia.com"
-            autoFocus
           />
         </div>
         <div className="text-left mb-3">
           <label className="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1.5">Password</label>
           <input
+            ref={passwordRef}
             type="password"
             className="w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2.5 rounded-[9px] text-[13.5px] focus:outline-none focus:border-[var(--accent)]"
             value={password}

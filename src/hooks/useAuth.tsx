@@ -38,13 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabase.auth.getSession().then(({ data: { session } }: any) => {
-      if (session?.user) loadProfile(session.user.id).finally(() => setLoading(false))
+      if (session?.user) {
+        if (session.user.email) localStorage.setItem('es_last_email', session.user.email)
+        loadProfile(session.user.id).finally(() => setLoading(false))
+      }
       else setLoading(false)
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session?.user) {
+        if (session.user.email) localStorage.setItem('es_last_email', session.user.email)
         loadProfile(session.user.id).finally(() => {
           qc.invalidateQueries()
           setLoading(false)
@@ -55,7 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadProfile, qc])
 
   const login = async (email: string, password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signInWithPassword({ email: email.toLowerCase().trim(), password })
+    const cleanEmail = email.toLowerCase().trim()
+    localStorage.setItem('es_last_email', cleanEmail)
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password })
     if (error) return error.message
     return null
   }
