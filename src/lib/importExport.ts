@@ -6,7 +6,7 @@ export function exportMachinesCSV(rows: Machine[], hideCols: boolean, canSeeClie
   let keys: (keyof Machine)[] = ['status','po_no','brand','model','branch','client_name','client_code','location','ae','reservation_date','delivery_date','serial_no','dispatch_date','notes','updated_at']
 
   if (hideCols) {
-    const drop = new Set<keyof Machine>(['client_name','location'])
+    const drop = new Set<keyof Machine>(['client_name','client_code','location'])
     const dropIdx = keys.map((k, i) => drop.has(k) ? i : -1).filter(i => i >= 0)
     keys = keys.filter(k => !drop.has(k))
     head = head.filter((_, i) => !dropIdx.includes(i))
@@ -16,7 +16,7 @@ export function exportMachinesCSV(rows: Machine[], hideCols: boolean, canSeeClie
   rows.forEach(m => {
     lines.push(keys.map(k => {
       let v: unknown
-      if ((k === 'client_name' || k === 'location') && !canSeeClientFn(m.ae)) v = '•••'
+      if ((k === 'client_name' || k === 'client_code' || k === 'location') && !canSeeClientFn(m.ae)) v = '•••'
       else v = m[k] ?? ''
       return `"${String(v).replace(/"/g, '""')}"`
     }).join(','))

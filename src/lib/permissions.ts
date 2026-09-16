@@ -16,18 +16,20 @@ export function getPerms(user: UserProfileWithRole | null): Required<RolePerms> 
 export function clientAESet(user: UserProfileWithRole | null): Set<string> {
   const s = new Set<string>()
   if (!user) return s
-  if (user.ae_code) s.add(user.ae_code.trim())
-  ;(user.approved_aes ?? []).forEach(a => { const t = a.trim(); if (t) s.add(t) })
+  if (user.ae_code) s.add(user.ae_code.trim().toUpperCase())
+  ;(user.approved_aes ?? []).forEach(a => { const t = a.trim().toUpperCase(); if (t) s.add(t) })
   return s
 }
 
 export function canSeeClient(user: UserProfileWithRole | null, aeVal: string | null): boolean {
   const p = getPerms(user)
   if (p.viewClient) return true
-  return clientAESet(user).has((aeVal ?? '').trim())
+  if (!aeVal || !aeVal.trim()) return false
+  return clientAESet(user).has(aeVal.trim().toUpperCase())
 }
 
 export function hideClientCols(user: UserProfileWithRole | null): boolean {
   const p = getPerms(user)
   return !p.viewClient && clientAESet(user).size === 0
 }
+

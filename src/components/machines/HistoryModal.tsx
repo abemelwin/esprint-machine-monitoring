@@ -1,6 +1,8 @@
 import { Modal } from '../ui/Modal'
 import { useMachineHistory } from '../../hooks/useMachines'
+import { useAuth } from '../../hooks/useAuth'
 import { useUsers } from '../../hooks/useAdmin'
+import { canSeeClient } from '../../lib/permissions'
 import type { Machine } from '../../types/database'
 
 interface Props {
@@ -8,9 +10,20 @@ interface Props {
   onClose: () => void
 }
 
+function sanitizeEvent(event: string, canSee: boolean): string {
+  if (canSee) return event
+  return event
+    .replace(/^Reserved for .*?( — fulfilled from TBA list)?$/i, (_match, p1) => `Reserved for [Hidden Client]${p1 ?? ''}`)
+    .replace(/^Delivered to .*?( on .*)$/i, 'Delivered to [Hidden Client]$1')
+    .replace(/Moved reservation \(.*?\) to TBA list/i, 'Moved reservation to TBA list')
+    .replace(/Reservation cancelled \(was .*?\)/i, 'Reservation cancelled')
+}
+
 export function HistoryModal({ machine, onClose }: Props) {
+  const { user } = useAuth()
   const { data: history, isLoading } = useMachineHistory(machine?.id ?? '')
   const { data: users } = useUsers()
+  const canSee = canSeeClient(user, machine?.ae ?? null)
 
   const formatActor = (actor: string | null) => {
     if (!actor) return null
@@ -49,7 +62,7 @@ export function HistoryModal({ machine, onClose }: Props) {
               <b className="text-[var(--text-secondary)] font-semibold whitespace-nowrap">
                 {h.created_at.slice(0, 16).replace('T', ' ')}
               </b>
-              <span className="text-[var(--text-muted)]">{h.event}</span>
+              <span className="text-[var(--text-muted)]">{sanitizeEvent(h.event, canSee)}</span>
               {actorName && <span className="text-[var(--text-muted)] ml-auto">· {actorName}</span>}
             </div>
           )

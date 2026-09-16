@@ -80,21 +80,23 @@ export function TBAView() {
   }
 
   const handleDelete = (t: TBAItem) => {
-    if (!window.confirm(`Delete TBA reservation for ${t.client_name} (${t.brand} ${t.model})?`)) return
+    const name = canSeeClient(user, t.ae) && t.client_name ? ` for ${t.client_name}` : ''
+    if (!window.confirm(`Delete TBA reservation${name} (${t.brand} ${t.model})?`)) return
     deleteTBA.mutate(t.id)
   }
 
   const handleFulfil = (t: TBAItem) => {
     const unit = machines.find(m => m.status === 'In Stock' && (m.brand ?? '').trim() === (t.brand ?? '').trim() && m.model.trim() === t.model.trim())
     if (!unit) { alert(`No available In Stock unit of ${t.brand} ${t.model} to allot. Add stock first.`); return }
-    if (!window.confirm(`Allot in-stock unit ${unit.serial_no ?? '(no serial)'} to ${t.client_name} and reserve it?`)) return
+    const name = canSeeClient(user, t.ae) && t.client_name ? ` to ${t.client_name}` : ''
+    if (!window.confirm(`Allot in-stock unit ${unit.serial_no ?? '(no serial)'}${name} and reserve it?`)) return
     updateMachine.mutate({
       id: unit.id,
       updates: { status: 'Reserved', client_name: t.client_name, client_code: t.client_code, ae: t.ae, reservation_date: t.reservation_date ?? today(), location: t.location ?? null },
-      event: `Reserved for ${t.client_name} — fulfilled from TBA list`,
+      event: `Reserved for ${t.client_name ?? 'Client'} — fulfilled from TBA list`,
     })
     deleteTBA.mutate(t.id)
-    alert(`Reserved ${unit.serial_no ?? 'a unit'} for ${t.client_name}.`)
+    alert(`Reserved ${unit.serial_no ?? 'a unit'}${name}.`)
   }
 
   const filterSel = (label: string, value: string, onChange: (v: string) => void, opts: string[]) => (
@@ -179,7 +181,7 @@ export function TBAView() {
                   {cols.map(c => {
                     const v = (t as Record<string, unknown>)[c.key]
                     const masked = (c.key === 'client_name' || c.key === 'client_code' || c.key === 'location') && !canSeeClient(user, t.ae)
-                    if (masked) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]">•••</span></td>
+                    if (masked) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE or team">•••</span></td>
                     if (c.key === 'brand' || c.key === 'model' || c.key === 'client_name') return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
                     if (c.key === 'notes') return <td key={c.key} className={`${tdCls} text-[var(--text-muted)] max-w-[200px] overflow-hidden text-ellipsis`} title={v ? String(v) : undefined}>{v ? String(v) : ''}</td>
                     return <td key={c.key} className={tdCls}>{v ? String(v) : DASH}</td>
@@ -187,9 +189,13 @@ export function TBAView() {
                   {pm.reserve && (
                     <td className={`${tdCls} sticky right-0 bg-inherit shadow-[-7px_0_9px_-7px_rgba(0,0,0,.14)]`}>
                       <div className="flex gap-1.5 justify-end">
-                        <Button size="sm" onClick={() => handleFulfil(t)} title="Fulfil — allot an available unit">📦 Fulfil</Button>
-                        <Button size="sm" variant="ghost" onClick={() => openEdit(t)} title="Edit">✎</Button>
-                        <Button size="sm" variant="danger" onClick={() => handleDelete(t)} title="Delete">🗑</Button>
+                        {(pm.viewClient || canSeeClient(user, t.ae)) && (
+                          <>
+                            <Button size="sm" onClick={() => handleFulfil(t)} title="Fulfil — allot an available unit">📦 Fulfil</Button>
+                            <Button size="sm" variant="ghost" onClick={() => openEdit(t)} title="Edit">✎</Button>
+                            <Button size="sm" variant="danger" onClick={() => handleDelete(t)} title="Delete">🗑</Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   )}

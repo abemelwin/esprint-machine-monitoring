@@ -114,7 +114,8 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
   }
 
   const moveToTBA = (m: Machine) => {
-    if (!window.confirm(`Move reservation for ${m.client_name} to TBA list? The unit returns to In Stock.`)) return
+    const name = canSeeClient(user, m.ae) && m.client_name ? ` for ${m.client_name}` : ''
+    if (!window.confirm(`Move reservation${name} to TBA list? The unit returns to In Stock.`)) return
     addTBA.mutate({
       brand: m.brand, model: m.model, client_name: m.client_name, client_code: m.client_code,
       ae: m.ae, reservation_date: m.reservation_date, location: m.location, notes: m.notes,
@@ -122,17 +123,18 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     updateMachine.mutate({
       id: m.id,
       updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null, location: null, notes: null, serial_no: null },
-      event: `Moved reservation (${m.client_name}) to TBA list — unit returned to available stock`,
+      event: `Moved reservation (${m.client_name ?? 'Client'}) to TBA list — unit returned to available stock`,
       requireStatus: 'Reserved',
     }, { onError: onMutationError })
   }
 
   const cancelReserve = (m: Machine) => {
-    if (!window.confirm(`Unreserve ${m.model} from ${m.client_name}?`)) return
+    const name = canSeeClient(user, m.ae) && m.client_name ? ` from ${m.client_name}` : ''
+    if (!window.confirm(`Unreserve ${m.model}${name}?`)) return
     updateMachine.mutate({
       id: m.id,
       updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null, location: null, notes: null, serial_no: null },
-      event: `Reservation cancelled (was ${m.client_name})`,
+      event: `Reservation cancelled (was ${m.client_name ?? 'Client'})`,
       requireStatus: 'Reserved',
     }, { onError: onMutationError })
   }
@@ -276,15 +278,15 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
                       if (c.key === 'serial_no' || c.key === 'po_no') return <td key={c.key} className={`${tdCls} font-mono text-[11.5px] text-[var(--text-secondary)]`}>{v ? String(v) : DASH}</td>
                       if (c.key === 'model') return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
                       if (c.key === 'client_name') {
-                        if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE">•••</span></td>
+                        if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE or team">•••</span></td>
                         return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
                       }
                       if (c.key === 'client_code') {
-                        if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE">•••</span></td>
+                        if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE or team">•••</span></td>
                         return <td key={c.key} className={tdCls}>{v ? String(v) : DASH}</td>
                       }
                       if (c.key === 'location') {
-                        if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]">•••</span></td>
+                        if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE or team">•••</span></td>
                         return <td key={c.key} className={tdCls}>{v ? String(v) : DASH}</td>
                       }
                       if (c.key === 'notes') return (
@@ -299,12 +301,12 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
                         <div className="flex gap-1.5 justify-end flex-nowrap">
                           {pm.edit    && m.status === 'Incoming'  && <Button size="sm" onClick={() => markArrived(m)} title="Mark arrived (→ In Stock)">📦</Button>}
                           {pm.reserve && ['In Stock','Demo','Recertified'].includes(m.status) && <Button size="sm" onClick={() => setReserveTarget(m)} title="Reserve">🔖</Button>}
-                          {pm.deliver && (['In Stock','Demo','Recertified','Reserved'].includes(m.status)) && <Button size="sm" onClick={() => setDeliverTarget(m)} title="Deliver">✅</Button>}
-                          {pm.reserve && m.status === 'Reserved' && <Button size="sm" onClick={() => moveToTBA(m)} title="Move to TBA list">📝</Button>}
-                          {pm.unreserve && m.status === 'Reserved' && <Button size="sm" onClick={() => cancelReserve(m)} title="Unreserve">↩</Button>}
+                          {pm.deliver && (['In Stock','Demo','Recertified'].includes(m.status) || (m.status === 'Reserved' && (pm.viewClient || canSeeClient(user, m.ae)))) && <Button size="sm" onClick={() => setDeliverTarget(m)} title="Deliver">✅</Button>}
+                          {pm.reserve && m.status === 'Reserved' && (pm.viewClient || canSeeClient(user, m.ae)) && <Button size="sm" onClick={() => moveToTBA(m)} title="Move to TBA list">📝</Button>}
+                          {pm.unreserve && m.status === 'Reserved' && (pm.viewClient || canSeeClient(user, m.ae)) && <Button size="sm" onClick={() => cancelReserve(m)} title="Unreserve">↩</Button>}
                           <Button size="sm" variant="ghost" onClick={() => setHistTarget(m)} title="History">🕒</Button>
-                          {pm.edit && <Button size="sm" variant="ghost" onClick={() => setEditTarget(m)} title="Edit">✎</Button>}
-                          {pm.edit && <Button size="sm" variant="danger" onClick={() => doDelete(m)} title="Delete">🗑</Button>}
+                          {pm.edit && (m.status !== 'Reserved' || pm.viewClient || canSeeClient(user, m.ae)) && <Button size="sm" variant="ghost" onClick={() => setEditTarget(m)} title="Edit">✎</Button>}
+                          {pm.edit && (m.status !== 'Reserved' || pm.viewClient || canSeeClient(user, m.ae)) && <Button size="sm" variant="danger" onClick={() => doDelete(m)} title="Delete">🗑</Button>}
                         </div>
                       </td>
                     )}
