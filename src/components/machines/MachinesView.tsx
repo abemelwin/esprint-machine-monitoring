@@ -12,6 +12,7 @@ import type { MachineFormData } from './MachineForm'
 import { ReserveModal } from './ReserveModal'
 import { DeliverModal } from './DeliverModal'
 import { HistoryModal } from './HistoryModal'
+import { useConfirm, useAlert } from '../ui/DialogProvider'
 import type { Machine, MachineStatus } from '../../types/database'
 
 type SortDir = 1 | -1
@@ -22,6 +23,8 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
   const { user } = useAuth()
   const pm = getPerms(user)
   const hideCols = hideClientCols(user)
+  const confirm = useConfirm()
+  const alert = useAlert()
 
   const { data: machines = [], isLoading } = useMachines()
 
@@ -84,8 +87,8 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     [...new Set(machines.map(m => m[key]).filter(Boolean))].sort() as string[]
 
   // ── actions ───────────────────────────────────────────────────
-  const onMutationError = (err: unknown) => {
-    alert((err as Error).message ?? 'Something went wrong. Please refresh and try again.')
+  const onMutationError = async (err: unknown) => {
+    await alert((err as Error).message ?? 'Something went wrong. Please refresh and try again.')
   }
 
   const markArrived = (m: Machine) => {
@@ -113,9 +116,15 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     }, { onSuccess: () => setDeliverTarget(null), onError: (err) => { setDeliverTarget(null); onMutationError(err) } })
   }
 
-  const moveToTBA = (m: Machine) => {
+  const moveToTBA = async (m: Machine) => {
     const name = canSeeClient(user, m.ae) && m.client_name ? ` for ${m.client_name}` : ''
-    if (!window.confirm(`Move reservation${name} to TBA list? The unit returns to In Stock.`)) return
+    const ok = await confirm({
+      title: 'Move to TBA',
+      message: `Move reservation${name} to TBA list? The unit returns to In Stock.`,
+      confirmLabel: 'Move to TBA',
+      variant: 'primary',
+    })
+    if (!ok) return
     addTBA.mutate({
       brand: m.brand, model: m.model, client_name: m.client_name, client_code: m.client_code,
       ae: m.ae, reservation_date: m.reservation_date, location: m.location, notes: m.notes,
@@ -128,9 +137,15 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     }, { onError: onMutationError })
   }
 
-  const cancelReserve = (m: Machine) => {
+  const cancelReserve = async (m: Machine) => {
     const name = canSeeClient(user, m.ae) && m.client_name ? ` from ${m.client_name}` : ''
-    if (!window.confirm(`Unreserve ${m.model}${name}?`)) return
+    const ok = await confirm({
+      title: 'Unreserve Machine',
+      message: `Unreserve ${m.model}${name}?`,
+      confirmLabel: 'Unreserve',
+      variant: 'primary',
+    })
+    if (!ok) return
     updateMachine.mutate({
       id: m.id,
       updates: { status: 'In Stock', client_name: null, client_code: null, ae: null, reservation_date: null, location: null, notes: null, serial_no: null },
@@ -139,8 +154,14 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
     }, { onError: onMutationError })
   }
 
-  const doDelete = (m: Machine) => {
-    if (!window.confirm(`Delete ${m.model} ${m.serial_no ?? ''}? This removes it from the system.`)) return
+  const doDelete = async (m: Machine) => {
+    const ok = await confirm({
+      title: 'Delete Machine',
+      message: `Delete ${m.model} ${m.serial_no ?? ''}? This removes it from the system.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!ok) return
     deleteMachine.mutate(m.id)
   }
 
@@ -187,13 +208,13 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
   ]
   const showActions = pm.edit || pm.reserve || pm.deliver || pm.unreserve
 
-  const thCls = 'sticky top-0 bg-[var(--surface-2)] text-left px-3 py-2.5 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wide whitespace-nowrap cursor-pointer border-b border-[var(--border)] hover:text-[var(--text-primary)]'
+  const thCls = 'sticky top-0 bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider whitespace-nowrap cursor-pointer border-b border-[var(--border)] hover:text-[var(--text-primary)] transition-colors'
   const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] align-middle whitespace-nowrap text-[12.5px]'
 
   // ── filter selects ─────────────────────────────────────────────
   const filterSel = (label: string, value: string, onChange: (v: string) => void, opts: string[]) => (
     <select
-      className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)]"
+      className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
       value={value}
       onChange={e => onChange(e.target.value)}
     >
@@ -209,7 +230,7 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
         <input
           type="search"
           placeholder="🔍 Search serial, model, client, code, branch…"
-          className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] min-w-[260px] focus:outline-none focus:border-[var(--accent)]"
+          className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] min-w-[260px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
           value={q}
           onChange={e => setQ(e.target.value)}
         />
@@ -218,19 +239,19 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
         {filterSel('All models',   fModel,  setFModel,  uniq('model'))}
         {filterSel('All branches', fBranch, setFBranch, uniq('branch'))}
         {filterSel('All AEs',      fAE,     setFAE,     uniq('ae'))}
-        <label className="inline-flex items-center gap-1.5 text-[13px] text-[var(--text-secondary)] bg-[var(--surface-1)] border border-[var(--border)] px-3 py-2 rounded-[9px] cursor-pointer select-none whitespace-nowrap">
-          <input type="checkbox" checked={hideDel} onChange={e => setHideDel(e.target.checked)} className="cursor-pointer" />
+        <label className="inline-flex items-center gap-1.5 text-[13px] text-[var(--text-secondary)] bg-[var(--surface-1)] border border-[var(--border)] px-3 py-2 rounded-[9px] cursor-pointer select-none whitespace-nowrap hover:border-[var(--border-strong)] transition-all">
+          <input type="checkbox" checked={hideDel} onChange={e => setHideDel(e.target.checked)} className="cursor-pointer accent-[var(--accent)]" />
           Hide delivered
         </label>
         <span className="flex-1" />
-        <span className="text-[12.5px] text-[var(--text-muted)] whitespace-nowrap">
+        <span className="text-[12.5px] font-medium text-[var(--text-muted)] bg-[var(--surface-2)] px-2.5 py-1 rounded-md border border-[var(--border)] whitespace-nowrap">
           {filtered.length} of {machines.length} shown
         </span>
       </div>
 
       {/* Table */}
       <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)] overflow-hidden">
-        <div className="overflow-x-auto" style={{ maxHeight: 640, overflowY: 'auto' }}>
+        <div className="overflow-x-auto custom-scrollbar" style={{ maxHeight: 640, overflowY: 'auto' }}>
           <table className="w-full border-collapse text-[12.5px]">
             <thead>
               <tr>
@@ -264,22 +285,23 @@ export function MachinesView({ addOpen, setAddOpen }: { addOpen: boolean; setAdd
                         <div className="mt-3">
                           <Button variant="primary" size="sm" onClick={() => setAddOpen(true)}>＋ Add a machine</Button>
                         </div>
-                      )}                    </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}
               {!isLoading && filtered.map(m => {
                 const rowCls = STATUS_CONFIG[m.status]?.rowClass ?? ''
                 return (
-                  <tr key={m.id} className={`${rowCls} hover:cursor-default`}>
+                  <tr key={m.id} className={`${rowCls} hover:cursor-default transition-colors`}>
                     {baseCols.map(c => {
                       const v = (m as Record<string, unknown>)[c.key]
                       if (c.key === 'status') return <td key={c.key} className={tdCls}><StatusPill status={m.status} /></td>
                       if (c.key === 'serial_no' || c.key === 'po_no') return <td key={c.key} className={`${tdCls} font-mono text-[11.5px] text-[var(--text-secondary)]`}>{v ? String(v) : DASH}</td>
-                      if (c.key === 'model') return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
+                      if (c.key === 'model') return <td key={c.key} className={`${tdCls} font-semibold text-[var(--text-primary)]`}>{v ? String(v) : DASH}</td>
                       if (c.key === 'client_name') {
                         if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE or team">•••</span></td>
-                        return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
+                        return <td key={c.key} className={`${tdCls} font-semibold text-[var(--text-primary)]`}>{v ? String(v) : DASH}</td>
                       }
                       if (c.key === 'client_code') {
                         if (!canSeeClient(user, m.ae)) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE or team">•••</span></td>

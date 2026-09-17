@@ -4,51 +4,53 @@
 
 /* ── Design tokens — light ─────────────────────────────────────── */
 :root {
-  --surface-0: #f4f4f2;
-  --surface-1: #fcfcfb;
-  --surface-2: #efeeea;
-  --surface-3: #e7e6e1;
-  --border: #e2e1db;
-  --border-strong: #cfcec7;
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #8a8981;
-  --stock: #1baf7a;
-  --incoming: #2a78d6;
-  --reserved: #eda100;
-  --delivered: #008300;
-  --tba: #8a5cd6;
+  --surface-0: #f8fafc;
+  --surface-1: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --stock: #059669;
+  --incoming: #2563eb;
+  --reserved: #d97706;
+  --delivered: #15803d;
+  --tba: #7c3aed;
   --recert: #0d9488;
-  --demo: #d6459b;
-  --pullout: #8a5a2b;
-  --accent: #2a78d6;
-  --danger: #e34948;
-  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 2px 8px rgba(0,0,0,.05);
+  --demo: #db2777;
+  --pullout: #92400e;
+  --accent: #2563eb;
+  --danger: #e11d48;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 25px -5px rgba(0,0,0,.08), 0 8px 10px -6px rgba(0,0,0,.04);
   --radius: 12px;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --surface-0: #141413;
-  --surface-1: #1e1e1c;
-  --surface-2: #262624;
-  --surface-3: #2f2f2c;
-  --border: #333330;
-  --border-strong: #454540;
-  --text-primary: #f5f5f0;
-  --text-secondary: #c3c2b7;
-  --text-muted: #8f8e85;
-  --stock: #199e70;
-  --incoming: #3987e5;
-  --reserved: #c98500;
-  --delivered: #2aa32a;
-  --tba: #9d78e0;
+  --surface-0: #0b0f17;
+  --surface-1: #111827;
+  --surface-2: #1e293b;
+  --surface-3: #334155;
+  --border: #1f293d;
+  --border-strong: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --stock: #10b981;
+  --incoming: #3b82f6;
+  --reserved: #f59e0b;
+  --delivered: #22c55e;
+  --tba: #8b5cf6;
   --recert: #14b8a6;
-  --demo: #e87ba4;
-  --pullout: #b07b45;
-  --accent: #3987e5;
-  --danger: #e66767;
-  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 2px 10px rgba(0,0,0,.28);
+  --demo: #ec4899;
+  --pullout: #d97706;
+  --accent: #3b82f6;
+  --danger: #f43f5e;
+  --shadow: 0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+  --shadow-lg: 0 12px 30px -4px rgba(0,0,0,.6), 0 8px 10px -6px rgba(0,0,0,.4);
   color-scheme: dark;
 }
 
@@ -56,34 +58,90 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: var(--surface-0);
   color: var(--text-primary);
-  line-height: 1.45;
+  line-height: 1.5;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Status row tints ──────────────────────────────────────────── */
-.st-incoming     { background: color-mix(in srgb,#2a78d6 10%,var(--surface-1)) !important; }
-.st-incoming:hover { background: color-mix(in srgb,#2a78d6 19%,var(--surface-1)) !important; }
-.st-instock      { background: color-mix(in srgb,#1baf7a 12%,var(--surface-1)) !important; }
-.st-instock:hover { background: color-mix(in srgb,#1baf7a 21%,var(--surface-1)) !important; }
-.st-recertified  { background: color-mix(in srgb,#0d9488 14%,var(--surface-1)) !important; }
-.st-recertified:hover { background: color-mix(in srgb,#0d9488 23%,var(--surface-1)) !important; }
-.st-demo         { background: color-mix(in srgb,#d6459b 11%,var(--surface-1)) !important; }
-.st-demo:hover   { background: color-mix(in srgb,#d6459b 20%,var(--surface-1)) !important; }
-.st-reserved     { background: color-mix(in srgb,#eda100 15%,var(--surface-1)) !important; }
-.st-reserved:hover { background: color-mix(in srgb,#eda100 24%,var(--surface-1)) !important; }
-.st-tba          { background: color-mix(in srgb,#8a5cd6 12%,var(--surface-1)) !important; }
-.st-tba:hover    { background: color-mix(in srgb,#8a5cd6 21%,var(--surface-1)) !important; }
-.st-delivered    { background: color-mix(in srgb,#8a8981 13%,var(--surface-1)) !important; }
-.st-delivered:hover { background: color-mix(in srgb,#8a8981 21%,var(--surface-1)) !important; }
-.st-pulloutparts { background: color-mix(in srgb,#8a5a2b 12%,var(--surface-1)) !important; }
-.st-pulloutparts:hover { background: color-mix(in srgb,#8a5a2b 20%,var(--surface-1)) !important; }
+/* ── Custom Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-1);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* ── Status row tints (Refined Enterprise Contrast) ─────────────── */
+.st-incoming     { background: color-mix(in srgb, var(--incoming) 7%, var(--surface-1)) !important; }
+.st-incoming:hover { background: color-mix(in srgb, var(--incoming) 14%, var(--surface-1)) !important; }
+.st-instock      { background: color-mix(in srgb, var(--stock) 7%, var(--surface-1)) !important; }
+.st-instock:hover { background: color-mix(in srgb, var(--stock) 14%, var(--surface-1)) !important; }
+.st-recertified  { background: color-mix(in srgb, var(--recert) 8%, var(--surface-1)) !important; }
+.st-recertified:hover { background: color-mix(in srgb, var(--recert) 15%, var(--surface-1)) !important; }
+.st-demo         { background: color-mix(in srgb, var(--demo) 7%, var(--surface-1)) !important; }
+.st-demo:hover   { background: color-mix(in srgb, var(--demo) 14%, var(--surface-1)) !important; }
+.st-reserved     { background: color-mix(in srgb, var(--reserved) 8%, var(--surface-1)) !important; }
+.st-reserved:hover { background: color-mix(in srgb, var(--reserved) 15%, var(--surface-1)) !important; }
+.st-tba          { background: color-mix(in srgb, var(--tba) 8%, var(--surface-1)) !important; }
+.st-tba:hover    { background: color-mix(in srgb, var(--tba) 15%, var(--surface-1)) !important; }
+.st-delivered    { background: color-mix(in srgb, var(--delivered) 6%, var(--surface-1)) !important; }
+.st-delivered:hover { background: color-mix(in srgb, var(--delivered) 13%, var(--surface-1)) !important; }
+.st-pulloutparts { background: color-mix(in srgb, var(--pullout) 7%, var(--surface-1)) !important; }
+.st-pulloutparts:hover { background: color-mix(in srgb, var(--pullout) 14%, var(--surface-1)) !important; }
 
 /* Reorder alert rows */
-.rp-crit  { background: rgba(227,73,72,.11)  !important; }
-.rp-crit:hover  { background: rgba(227,73,72,.17)  !important; }
-.rp-warn  { background: rgba(237,161,0,.11)  !important; }
-.rp-warn:hover  { background: rgba(237,161,0,.17)  !important; }
+.rp-crit  { background: color-mix(in srgb, var(--danger) 10%, var(--surface-1)) !important; }
+.rp-crit:hover  { background: color-mix(in srgb, var(--danger) 16%, var(--surface-1)) !important; }
+.rp-warn  { background: color-mix(in srgb, var(--reserved) 10%, var(--surface-1)) !important; }
+.rp-warn:hover  { background: color-mix(in srgb, var(--reserved) 16%, var(--surface-1)) !important; }
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-in {
+  animation-duration: 150ms;
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.zoom-in-95 {
+  animation-name: zoomIn;
+}

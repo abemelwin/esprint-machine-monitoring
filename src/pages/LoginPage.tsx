@@ -39,21 +39,21 @@ export function LoginPage() {
   const onKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleLogin() }
 
   return (
-    <div className="fixed inset-0 bg-[var(--surface-0)] flex items-center justify-center p-5 z-[100]">
-      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,.25)] w-full max-w-[380px] px-7 py-8 text-center">
+    <div className="fixed inset-0 bg-[var(--surface-0)] flex items-center justify-center p-5 z-[100] animate-in fade-in duration-200">
+      <div className="bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.35)] w-full max-w-[400px] px-8 py-9 text-center animate-in zoom-in-95 duration-200">
         {/* Logo */}
-        <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-4">
+        <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 border border-[var(--border)] shadow-md">
           <img src="/Logo.jpg" alt="ES Print Logo" className="w-full h-full object-cover" />
         </div>
-        <h2 className="text-[18px] font-bold text-[var(--text-primary)]">Machine Monitoring System</h2>
-        <p className="text-[12.5px] text-[var(--text-muted)] mt-1 mb-5">ES Print Group of Companies — sign in to continue</p>
+        <h2 className="text-[20px] font-bold text-[var(--text-primary)] tracking-tight">Machine Monitoring System</h2>
+        <p className="text-[13px] text-[var(--text-muted)] mt-1 mb-6">ES Print Group of Companies — sign in to continue</p>
 
-        <div className="text-left mb-3">
+        <div className="text-left mb-4">
           <label className="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1.5">Email</label>
           <input
             ref={emailRef}
             type="email"
-            className="w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2.5 rounded-[9px] text-[13.5px] focus:outline-none focus:border-[var(--accent)]"
+            className="w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3.5 py-2.5 rounded-[10px] text-[13.5px] transition-all focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 placeholder:text-[var(--text-muted)]"
             value={email}
             onChange={e => {
               setEmail(e.target.value)
@@ -64,12 +64,12 @@ export function LoginPage() {
             placeholder="you@esprintmedia.com"
           />
         </div>
-        <div className="text-left mb-3">
+        <div className="text-left mb-4">
           <label className="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1.5">Password</label>
           <input
             ref={passwordRef}
             type="password"
-            className="w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2.5 rounded-[9px] text-[13.5px] focus:outline-none focus:border-[var(--accent)]"
+            className="w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3.5 py-2.5 rounded-[10px] text-[13.5px] transition-all focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 placeholder:text-[var(--text-muted)]"
             value={password}
             onChange={e => setPassword(e.target.value)}
             onKeyDown={onKey}
@@ -77,10 +77,10 @@ export function LoginPage() {
           />
         </div>
 
-        <p className="text-[12.5px] text-[var(--danger)] min-h-[18px] mb-2">{error}</p>
+        <p className="text-[12.5px] text-[var(--danger)] min-h-[20px] mb-3 text-left font-medium">{error}</p>
 
         <button
-          className="w-full bg-[var(--accent)] text-white border border-[var(--accent)] px-3.5 py-2.5 rounded-[9px] text-[13px] font-[550] cursor-pointer hover:brightness-110 disabled:opacity-50"
+          className="w-full bg-[var(--accent)] text-white border border-[var(--accent)] px-4 py-2.5 rounded-[10px] text-[13.5px] font-[600] cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 shadow-sm"
           onClick={handleLogin}
           disabled={loading}
         >

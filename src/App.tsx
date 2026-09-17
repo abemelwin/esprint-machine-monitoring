@@ -9,6 +9,7 @@ import { StockView }    from './components/stock/StockView'
 import { TBAView }      from './components/tba/TBAView'
 import { AdminPanel }   from './components/admin/AdminPanel'
 import { supabase }     from './lib/supabase'
+import { DialogProvider, useConfirm, useAlert } from './components/ui/DialogProvider'
 
 // Version is auto-injected at build time from git commit hash
 declare const __APP_VERSION__: string
@@ -16,12 +17,14 @@ const APP_VERSION = __APP_VERSION__
 
 type MainView = 'machines' | 'stock' | 'tba'
 
-export default function App() {
+function AppContent() {
   const { user, loading, logout } = useAuth()
   const pm      = getPerms(user)
   const hideCols = hideClientCols(user)
 
   const { data: machines = [] } = useMachines()
+  const confirm = useConfirm()
+  const alert = useAlert()
 
   const [view,       setView]       = useState<MainView>('machines')
   const [adminOpen,  setAdminOpen]  = useState(false)
@@ -88,16 +91,29 @@ export default function App() {
       if (!file) return
       const text = await file.text()
       let obj: LegacyBackup
-      try { obj = JSON.parse(text) } catch { alert('Could not parse JSON file.'); return }
-      if (!obj.machines) { alert('Not a valid backup file.'); return }
+      try {
+        obj = JSON.parse(text)
+      } catch {
+        await alert('Could not parse JSON file.')
+        return
+      }
+      if (!obj.machines) {
+        await alert('Not a valid backup file.')
+        return
+      }
       const { machines: rows, tba, reorder } = parseLegacyBackup(obj)
-      if (!window.confirm(`Import ${rows.length} machines from backup? Existing data will NOT be deleted — this adds new rows.`)) return
+      const ok = await confirm(`Import ${rows.length} machines from backup? Existing data will NOT be deleted — this adds new rows.`)
+      if (!ok) return
+
       const { error } = await supabase.from('machines').insert(rows)
-      if (error) { alert('Import error: ' + error.message); return }
+      if (error) {
+        await alert('Import error: ' + error.message)
+        return
+      }
       if (tba.length) await supabase.from('tba_list').insert(tba as never)
       for (const rpt of reorder) await supabase.from('reorder_points').upsert(rpt, { onConflict: 'brand,model' })
       setSavedAt('Imported ✓')
-      alert(`Imported ${rows.length} machines successfully.`)
+      await alert(`Imported ${rows.length} machines successfully.`)
     }
     input.click()
   }
@@ -205,5 +221,13 @@ export default function App() {
         ES Machine Monitoring System · ES Print Group of Companies
       </footer>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <DialogProvider>
+      <AppContent />
+    </DialogProvider>
   )
 }

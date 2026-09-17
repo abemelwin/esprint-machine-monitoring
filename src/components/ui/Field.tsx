@@ -1,6 +1,6 @@
 import type { ReactNode, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
-const inputCls = 'w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2.5 rounded-[9px] text-[13.5px] font-[inherit] focus:outline-none focus:border-[var(--accent)]'
+const inputCls = 'w-full bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2.5 rounded-[9px] text-[13.5px] font-[inherit] transition-all duration-150 focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 placeholder:text-[var(--text-muted)]'
 
 interface FieldProps {
   label: string
@@ -16,7 +16,7 @@ export function Field({ label, required, hint, children }: FieldProps) {
         {label}{required && <span className="text-[var(--danger)] ml-0.5">*</span>}
       </label>
       {children}
-      {hint && <p className="text-[11.5px] text-[var(--text-muted)]">{hint}</p>}
+      {hint && <p className="text-[11.5px] text-[var(--text-muted)] leading-tight">{hint}</p>}
     </div>
   )
 }
@@ -43,7 +43,7 @@ export function Grid2({ children }: { children: ReactNode }) {
 
 export function Banner({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] border border-[color-mix(in_srgb,var(--accent)_30%,transparent)] text-[var(--text-secondary)] px-3 py-2.5 rounded-[9px] text-[12.5px] mb-3.5">
+    <div className="bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface-1))] border border-[color-mix(in_srgb,var(--accent)_25%,var(--border))] text-[var(--text-secondary)] px-3.5 py-2.5 rounded-[10px] text-[12.5px] leading-relaxed shadow-sm">
       {children}
     </div>
   )

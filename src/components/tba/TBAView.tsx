@@ -8,6 +8,7 @@ import { Button } from '../ui/Button'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { Field, Grid2, Input, Textarea, Banner } from '../ui/Field'
 import { LookupSelect } from '../ui/LookupSelect'
+import { useConfirm, useAlert } from '../ui/DialogProvider'
 import type { TBAItem } from '../../types/database'
 
 type TBAForm = {
@@ -25,6 +26,8 @@ export function TBAView() {
   const { user } = useAuth()
   const pm       = getPerms(user)
   const hideCols = hideClientCols(user)
+  const confirm  = useConfirm()
+  const alert    = useAlert()
 
   const { data: tbaList  = [] } = useTBA()
   const { data: machines = [] } = useMachines()
@@ -79,34 +82,53 @@ export function TBAView() {
     }
   }
 
-  const handleDelete = (t: TBAItem) => {
+  const handleDelete = async (t: TBAItem) => {
     const name = canSeeClient(user, t.ae) && t.client_name ? ` for ${t.client_name}` : ''
-    if (!window.confirm(`Delete TBA reservation${name} (${t.brand} ${t.model})?`)) return
+    const ok = await confirm({
+      title: 'Delete TBA Reservation',
+      message: `Delete TBA reservation${name} (${t.brand} ${t.model})?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!ok) return
     deleteTBA.mutate(t.id)
   }
 
-  const handleFulfil = (t: TBAItem) => {
+  const handleFulfil = async (t: TBAItem) => {
     const unit = machines.find(m => m.status === 'In Stock' && (m.brand ?? '').trim() === (t.brand ?? '').trim() && m.model.trim() === t.model.trim())
-    if (!unit) { alert(`No available In Stock unit of ${t.brand} ${t.model} to allot. Add stock first.`); return }
+    if (!unit) {
+      await alert(`No available In Stock unit of ${t.brand} ${t.model} to allot. Add stock first.`)
+      return
+    }
     const name = canSeeClient(user, t.ae) && t.client_name ? ` to ${t.client_name}` : ''
-    if (!window.confirm(`Allot in-stock unit ${unit.serial_no ?? '(no serial)'}${name} and reserve it?`)) return
+    const ok = await confirm({
+      title: 'Fulfil TBA Reservation',
+      message: `Allot in-stock unit ${unit.serial_no ?? '(no serial)'}${name} and reserve it?`,
+      confirmLabel: 'Allot & Reserve',
+      variant: 'primary',
+    })
+    if (!ok) return
     updateMachine.mutate({
       id: unit.id,
       updates: { status: 'Reserved', client_name: t.client_name, client_code: t.client_code, ae: t.ae, reservation_date: t.reservation_date ?? today(), location: t.location ?? null },
       event: `Reserved for ${t.client_name ?? 'Client'} — fulfilled from TBA list`,
     })
     deleteTBA.mutate(t.id)
-    alert(`Reserved ${unit.serial_no ?? 'a unit'}${name}.`)
+    await alert(`Reserved ${unit.serial_no ?? 'a unit'}${name}.`)
   }
 
   const filterSel = (label: string, value: string, onChange: (v: string) => void, opts: string[]) => (
-    <select className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)]" value={value} onChange={e => onChange(e.target.value)}>
+    <select
+      className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+    >
       <option value="">{label}</option>
       {opts.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
   )
 
-  const thCls = 'sticky top-0 bg-[var(--surface-2)] text-left px-3 py-2.5 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wide whitespace-nowrap border-b border-[var(--border)]'
+  const thCls = 'sticky top-0 bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider whitespace-nowrap border-b border-[var(--border)]'
   const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] align-middle text-[12.5px]'
   const DASH  = <span className="text-[var(--text-muted)]">—</span>
 
@@ -146,22 +168,24 @@ export function TBAView() {
       {/* Toolbar */}
       <div className="flex gap-2.5 flex-wrap items-center mb-3.5">
         <input type="search" placeholder="🔍 Search brand, model, client…"
-          className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] min-w-[220px] focus:outline-none focus:border-[var(--accent)]"
+          className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] min-w-[220px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
           value={q} onChange={e => setQ(e.target.value)} />
         {filterSel('All brands',  fBrand, setFBrand, uniq('brand'))}
         {filterSel('All models',  fModel, setFModel, uniq('model'))}
         {filterSel('All AEs',     fAE,    setFAE,    uniq('ae'))}
         <span className="flex-1" />
         {pm.reserve && <Button variant="primary" onClick={openAdd}>＋ Add TBA</Button>}
-        <span className="text-[12.5px] text-[var(--text-muted)]">{filtered.length} of {tbaList.length} reservations</span>
+        <span className="text-[12.5px] font-medium text-[var(--text-muted)] bg-[var(--surface-2)] px-2.5 py-1 rounded-md border border-[var(--border)] whitespace-nowrap">
+          {filtered.length} of {tbaList.length} reservations
+        </span>
       </div>
 
-      <div className="text-[12.5px] text-[var(--text-secondary)] mb-3">
+      <div className="text-[12.5px] text-[var(--text-secondary)] mb-3 leading-relaxed">
         TBA reservations are client demands <b>not allotted to any unit</b> — inventory stays available. Use <b>📦 Fulfil</b> when stock is on hand to reserve an available unit for the client.
       </div>
 
       <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)] overflow-hidden">
-        <div className="overflow-x-auto" style={{ maxHeight: 640, overflowY: 'auto' }}>
+        <div className="overflow-x-auto custom-scrollbar" style={{ maxHeight: 640, overflowY: 'auto' }}>
           <table className="w-full border-collapse">
             <thead>
               <tr>
@@ -177,12 +201,12 @@ export function TBAView() {
                 </td></tr>
               )}
               {filtered.map(t => (
-                <tr key={t.id} className="st-tba">
+                <tr key={t.id} className="st-tba hover:cursor-default transition-colors">
                   {cols.map(c => {
                     const v = (t as Record<string, unknown>)[c.key]
                     const masked = (c.key === 'client_name' || c.key === 'client_code' || c.key === 'location') && !canSeeClient(user, t.ae)
                     if (masked) return <td key={c.key} className={tdCls}><span className="text-[var(--text-muted)]" title="Hidden — not your AE or team">•••</span></td>
-                    if (c.key === 'brand' || c.key === 'model' || c.key === 'client_name') return <td key={c.key} className={`${tdCls} font-semibold`}>{v ? String(v) : DASH}</td>
+                    if (c.key === 'brand' || c.key === 'model' || c.key === 'client_name') return <td key={c.key} className={`${tdCls} font-semibold text-[var(--text-primary)]`}>{v ? String(v) : DASH}</td>
                     if (c.key === 'notes') return <td key={c.key} className={`${tdCls} text-[var(--text-muted)] max-w-[200px] overflow-hidden text-ellipsis`} title={v ? String(v) : undefined}>{v ? String(v) : ''}</td>
                     return <td key={c.key} className={tdCls}>{v ? String(v) : DASH}</td>
                   })}

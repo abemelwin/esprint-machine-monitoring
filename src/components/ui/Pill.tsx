@@ -11,11 +11,15 @@ export function StatusPill({ status }: { status: MachineStatus }) {
   const cfg = STATUS_CONFIG[status] ?? { hex: '#888', color: '#888', icon: '' }
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-[650] whitespace-nowrap"
-      style={{ background: hexAlpha(cfg.hex, 0.14), color: cfg.color }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-[600] tracking-wide whitespace-nowrap shadow-sm border"
+      style={{
+        background: hexAlpha(cfg.hex, 0.12),
+        color: cfg.color,
+        borderColor: hexAlpha(cfg.hex, 0.25),
+      }}
     >
       <span
-        className="w-2 h-2 rounded-full flex-none"
+        className="w-1.5 h-1.5 rounded-full flex-none shadow-[0_0_6px_currentColor]"
         style={{ background: cfg.hex }}
       />
       {status}
@@ -34,8 +38,12 @@ export function Pill({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-[650] whitespace-nowrap"
-      style={{ background: bg, color }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-[600] whitespace-nowrap border shadow-sm"
+      style={{
+        background: bg,
+        color,
+        borderColor: 'color-mix(in srgb, currentColor 20%, transparent)',
+      }}
     >
       {label}
     </span>

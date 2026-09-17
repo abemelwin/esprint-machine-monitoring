@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Field, Grid2, Input, Select, Textarea, Banner } from '../ui/Field'
 import { LookupSelect } from '../ui/LookupSelect'
+import { Button } from '../ui/Button'
 import { ALL_STATUSES } from '../../lib/constants'
 import type { Machine } from '../../types/database'
 
@@ -168,22 +169,20 @@ export function MachineForm({ machine, onSubmit, onCancel, loading }: Props) {
       {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
 
       <div className="flex gap-2.5 justify-end pt-1">
-        <button
-          className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]"
+        <Button
+          variant="default"
           onClick={onCancel}
         >
           Cancel
-        </button>
-        <button
-          className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--accent)] text-white border border-[var(--accent)] hover:brightness-110 px-3.5 py-2 rounded-[9px] text-[13px] disabled:opacity-50"
+        </Button>
+        <Button
+          variant="primary"
           onClick={handleSubmit}
           disabled={loading}
         >
           {loading ? 'Saving…' : isAdd ? 'Add Machine' : 'Save Changes'}
-        </button>
+        </Button>
       </div>
     </div>
   )
 }
-
-

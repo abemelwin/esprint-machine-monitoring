@@ -1,4 +1,5 @@
 import { Modal } from '../ui/Modal'
+import { Button } from '../ui/Button'
 import { useMachineHistory } from '../../hooks/useMachines'
 import { useAuth } from '../../hooks/useAuth'
 import { useUsers } from '../../hooks/useAdmin'
@@ -42,31 +43,42 @@ export function HistoryModal({ machine, onClose }: Props) {
       onClose={onClose}
       title={`History — ${machine?.model ?? ''} ${machine?.serial_no ?? ''}`}
       footer={
-        <button
-          className="inline-flex items-center gap-1.5 font-[550] cursor-pointer bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] px-3.5 py-2 rounded-[9px] text-[13px]"
-          onClick={onClose}
-        >
+        <Button variant="default" onClick={onClose}>
           Close
-        </button>
+        </Button>
       }
     >
-      <div className="mt-2 border-t border-[var(--border)] pt-3 flex flex-col gap-1.5">
-        {isLoading && <p className="text-[12px] text-[var(--text-muted)]">Loading…</p>}
+      <div className="flex flex-col gap-3">
+        {isLoading && <p className="text-[13px] text-[var(--text-muted)] py-4 text-center">Loading…</p>}
         {!isLoading && !history?.length && (
-          <p className="text-[12px] text-[var(--text-muted)]">No history yet.</p>
+          <div className="text-center py-8 text-[var(--text-muted)] text-[13px]">
+            <div className="text-3xl mb-1">🕒</div>
+            No history yet.
+          </div>
         )}
-        {history?.map(h => {
-          const actorName = formatActor(h.actor)
-          return (
-            <div key={h.id} className="flex gap-2.5 text-[11.5px] py-1">
-              <b className="text-[var(--text-secondary)] font-semibold whitespace-nowrap">
-                {h.created_at.slice(0, 16).replace('T', ' ')}
-              </b>
-              <span className="text-[var(--text-muted)]">{sanitizeEvent(h.event, canSee)}</span>
-              {actorName && <span className="text-[var(--text-muted)] ml-auto">· {actorName}</span>}
-            </div>
-          )
-        })}
+        <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-[var(--border)]">
+          {history?.map(h => {
+            const actorName = formatActor(h.actor)
+            return (
+              <div key={h.id} className="relative flex flex-col gap-1 text-[12.5px]">
+                <span className="absolute -left-6 top-1.5 w-2 h-2 rounded-full bg-[var(--accent)] ring-4 ring-[var(--surface-1)]" />
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="font-mono text-[11.5px] font-semibold text-[var(--text-secondary)]">
+                    {h.created_at.slice(0, 16).replace('T', ' ')}
+                  </span>
+                  {actorName && (
+                    <span className="text-[11px] font-medium text-[var(--text-muted)] bg-[var(--surface-2)] px-2 py-0.5 rounded-full border border-[var(--border)]">
+                      {actorName}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[var(--text-primary)] font-medium bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-2.5">
+                  {sanitizeEvent(h.event, canSee)}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </Modal>
   )

@@ -9,13 +9,13 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
 }
 
-const base = 'inline-flex items-center gap-1.5 font-[550] cursor-pointer transition-[filter,border-color,color] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'
+const base = 'inline-flex items-center justify-center gap-1.5 font-[550] cursor-pointer transition-all duration-150 whitespace-nowrap active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 select-none shadow-sm'
 
 const variants: Record<Variant, string> = {
-  default: 'bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]',
-  primary: 'bg-[var(--accent)] text-white border border-[var(--accent)] hover:brightness-110',
-  danger:  'bg-[var(--surface-1)] border border-[var(--border)] text-[var(--danger)] hover:border-[var(--border-strong)]',
-  ghost:   'bg-transparent border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+  default: 'bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] active:bg-[var(--surface-3)]',
+  primary: 'bg-[var(--accent)] text-white border border-[var(--accent)] hover:brightness-110 active:brightness-95 shadow-[0_1px_3px_rgba(42,120,214,0.3)]',
+  danger:  'bg-[var(--surface-1)] border border-[var(--border)] text-[var(--danger)] hover:border-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--danger)_15%,transparent)]',
+  ghost:   'bg-transparent border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] shadow-none',
 }
 
 const sizes: Record<Size, string> = {

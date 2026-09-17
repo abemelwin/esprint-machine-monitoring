@@ -111,7 +111,7 @@ export function StockView() {
 
   const filterSel = (label: string, value: string, onChange: (v: string) => void, opts: string[]) => (
     <select
-      className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)]"
+      className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
       value={value} onChange={e => onChange(e.target.value)}
     >
       <option value="">{label}</option>
@@ -119,7 +119,7 @@ export function StockView() {
     </select>
   )
 
-  const thCls = 'sticky top-0 bg-[var(--surface-2)] text-left px-3 py-2.5 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wide whitespace-nowrap border-b border-[var(--border)]'
+  const thCls = 'sticky top-0 bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider whitespace-nowrap border-b border-[var(--border)]'
   const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] align-middle text-[12.5px]'
 
   return (
@@ -129,25 +129,25 @@ export function StockView() {
         <input
           type="search"
           placeholder="🔍 Search brand or model…"
-          className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] min-w-[220px] focus:outline-none focus:border-[var(--accent)]"
+          className="bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] min-w-[220px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
           value={q} onChange={e => setQ(e.target.value)}
         />
         {filterSel('All brands',   fBrand,  setFBrand,  allBrands)}
         {filterSel('All branches', fBranch, setFBranch, allBranches)}
-        <label className="inline-flex items-center gap-1.5 text-[13px] text-[var(--text-secondary)] bg-[var(--surface-1)] border border-[var(--border)] px-3 py-2 rounded-[9px] cursor-pointer select-none whitespace-nowrap">
-          <input type="checkbox" checked={rpOnly} onChange={e => setRpOnly(e.target.checked)} className="cursor-pointer" />
+        <label className="inline-flex items-center gap-1.5 text-[13px] text-[var(--text-secondary)] bg-[var(--surface-1)] border border-[var(--border)] px-3 py-2 rounded-[9px] cursor-pointer select-none whitespace-nowrap hover:border-[var(--border-strong)] transition-all">
+          <input type="checkbox" checked={rpOnly} onChange={e => setRpOnly(e.target.checked)} className="cursor-pointer accent-[var(--accent)]" />
           Show only items to reorder
         </label>
         <Button onClick={exportCSV}>⬇ CSV</Button>
         <span className="flex-1" />
-        <span className="text-[12.5px] text-[var(--text-muted)]">{rows.length} brand-models</span>
+        <span className="text-[12.5px] font-medium text-[var(--text-muted)] bg-[var(--surface-2)] px-2.5 py-1 rounded-md border border-[var(--border)] whitespace-nowrap">{rows.length} brand-models</span>
       </div>
 
       {/* Reorder note */}
-      <div className="text-[12.5px] text-[var(--text-secondary)] mb-3 flex items-center gap-2 flex-wrap">
+      <div className="text-[12.5px] text-[var(--text-secondary)] mb-3 flex items-center gap-2 flex-wrap leading-relaxed">
         {need > 0 ? (
           <>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-[650]" style={{ background: 'rgba(227,73,72,.14)', color: 'var(--danger)' }}>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-[650] border" style={{ background: 'color-mix(in srgb, var(--danger) 14%, transparent)', color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 30%, transparent)' }}>
               ⚠ {need} to replenish
             </span>
             {crit} need reorder now{need > crit ? `, ${need - crit} already have stock incoming` : ''}.
@@ -157,7 +157,7 @@ export function StockView() {
       </div>
 
       <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)] overflow-hidden">
-        <div className="overflow-x-auto" style={{ maxHeight: 640, overflowY: 'auto' }}>
+        <div className="overflow-x-auto custom-scrollbar" style={{ maxHeight: 640, overflowY: 'auto' }}>
           <table className="w-full border-collapse">
             <thead>
               <tr>
@@ -179,18 +179,18 @@ export function StockView() {
                 </td></tr>
               )}
               {rows.map(r => (
-                <tr key={r.key} className={`rp-${r.cls}`}>
-                  <td className={`${tdCls} font-semibold`}>{r.brand}</td>
-                  <td className={`${tdCls} font-semibold`}>{r.model}</td>
+                <tr key={r.key} className={`rp-${r.cls} hover:cursor-default transition-colors`}>
+                  <td className={`${tdCls} font-semibold text-[var(--text-primary)]`}>{r.brand}</td>
+                  <td className={`${tdCls} font-semibold text-[var(--text-primary)]`}>{r.model}</td>
                   <td className={`${tdCls} text-center`}>
-                    <span className="text-[15px] font-[750] tabular-nums" style={{ color: r.cls === 'crit' ? 'var(--danger)' : r.cls === 'warn' ? 'var(--reserved)' : 'var(--text-primary)' }}>
+                    <span className="text-[14px] font-[700] tabular-nums" style={{ color: r.cls === 'crit' ? 'var(--danger)' : r.cls === 'warn' ? 'var(--reserved)' : 'var(--text-primary)' }}>
                       {r.physical}
                     </span>
                   </td>
-                  <td className={`${tdCls} text-center`}>{r.incoming || <span className="text-[var(--text-muted)]">0</span>}</td>
-                  <td className={`${tdCls} text-center`}>{r.reserved || <span className="text-[var(--text-muted)]">0</span>}</td>
+                  <td className={`${tdCls} text-center font-medium`}>{r.incoming || <span className="text-[var(--text-muted)]">0</span>}</td>
+                  <td className={`${tdCls} text-center font-medium`}>{r.reserved || <span className="text-[var(--text-muted)]">0</span>}</td>
                   <td className={`${tdCls} text-center`}>
-                    <span className="text-[15px] font-[750] tabular-nums" style={{ color: r.available < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                    <span className="text-[14px] font-[700] tabular-nums" style={{ color: r.available < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
                       {r.available}
                     </span>
                   </td>
@@ -202,7 +202,7 @@ export function StockView() {
                   <td className={`${tdCls} text-center`}>
                     <input
                       type="number" min={0}
-                      className="w-16 bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-2 py-1.5 rounded-[7px] text-[13px] text-center focus:outline-none focus:border-[var(--accent)]"
+                      className="w-16 bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-2 py-1.5 rounded-[7px] text-[13px] text-center focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
                       defaultValue={r.rp || ''}
                       placeholder="—"
                       disabled={!pm.edit}
@@ -213,8 +213,8 @@ export function StockView() {
                     />
                   </td>
                   <td className={tdCls}>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-[650]"
-                      style={{ background: `color-mix(in srgb, ${r.color} 15%, transparent)`, color: r.color }}>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-[650] border shadow-sm"
+                      style={{ background: `color-mix(in srgb, ${r.color} 15%, transparent)`, color: r.color, borderColor: `color-mix(in srgb, ${r.color} 30%, transparent)` }}>
                       {r.label}
                     </span>
                   </td>

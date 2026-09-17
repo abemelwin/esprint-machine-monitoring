@@ -7,6 +7,7 @@ import { Button } from '../ui/Button'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { Field, Grid2, Input, Select, Banner } from '../ui/Field'
 import { useLookups } from '../../hooks/useMachines'
+import { useConfirm, useAlert } from '../ui/DialogProvider'
 
 type AdminTab = 'roles' | 'users'
 
@@ -36,21 +37,32 @@ function RolesTab() {
   const saveRole   = useSaveRole()
   const deleteRole = useDeleteRole()
   const [editTarget, setEditTarget] = useState<InvRole | null | 'new'>(null)
+  const confirm = useConfirm()
+  const alert = useAlert()
 
-  const handleDelete = (r: InvRole) => {
+  const handleDelete = async (r: InvRole) => {
     const inUse = users.filter(u => u.inv_role_key === r.key).length
-    if (inUse) { alert(`Cannot delete "${r.label}" — ${inUse} user(s) assigned. Reassign them first.`); return }
-    if (!window.confirm(`Delete role "${r.label}"?`)) return
+    if (inUse) {
+      await alert(`Cannot delete "${r.label}" — ${inUse} user(s) assigned. Reassign them first.`)
+      return
+    }
+    const ok = await confirm({
+      title: 'Delete Role',
+      message: `Delete role "${r.label}"?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!ok) return
     deleteRole.mutate(r.id)
   }
 
-  const thCls = 'bg-[var(--surface-2)] text-left px-3 py-2.5 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wide border-b border-[var(--border)]'
+  const thCls = 'bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]'
   const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] text-[12.5px]'
 
   return (
     <>
       <Banner>Define what each role can do, then assign people to roles under the <b>Users</b> tab.</Banner>
-      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
+      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4 custom-scrollbar" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
         <table className="w-full border-collapse">
           <thead><tr>
             <th className={thCls}>Role</th>
@@ -63,16 +75,16 @@ function RolesTab() {
               const nUsers = users.filter(u => u.inv_role_key === r.key).length
               const tags = permSummary(r.perms)
               return (
-                <tr key={r.id}>
-                  <td className={`${tdCls} font-semibold`}>{r.label}</td>
+                <tr key={r.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
+                  <td className={`${tdCls} font-semibold text-[var(--text-primary)]`}>{r.label}</td>
                   <td className={tdCls}>
                     <div className="flex flex-wrap gap-1">
                       {tags.map(t => (
-                        <span key={t} className="text-[11px] px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)] border border-[color-mix(in_srgb,var(--accent)_28%,transparent)]">{t}</span>
+                        <span key={t} className="text-[11px] px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)] border border-[color-mix(in_srgb,var(--accent)_28%,transparent)] font-medium">{t}</span>
                       ))}
                     </div>
                   </td>
-                  <td className={`${tdCls} text-center`}>{nUsers}</td>
+                  <td className={`${tdCls} text-center font-medium`}>{nUsers}</td>
                   <td className={`${tdCls} text-right`}>
                     <div className="flex gap-1.5 justify-end">
                       <Button size="sm" variant="ghost" onClick={() => setEditTarget(r)}>✎</Button>
@@ -132,8 +144,8 @@ function RoleForm({ role, onClose, onSave, loading }: {
         <Field label="Permissions">
           <div className="flex flex-col gap-2.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[10px] p-3.5">
             {PERM_DEFS.map(d => (
-              <label key={d.k} className="flex gap-2.5 items-start cursor-pointer text-[13px] text-[var(--text-primary)]">
-                <input type="checkbox" className="mt-0.5 w-4 h-4 cursor-pointer flex-none"
+              <label key={d.k} className="flex gap-2.5 items-start cursor-pointer text-[13px] text-[var(--text-primary)] hover:opacity-90">
+                <input type="checkbox" className="mt-0.5 w-4 h-4 cursor-pointer flex-none accent-[var(--accent)]"
                   checked={!!perms[d.k as keyof RolePerms]}
                   onChange={() => toggle(d.k)} />
                 <span><b>{d.label}</b><br /><span className="text-[11px] text-[var(--text-muted)]">{d.hint}</span></span>
@@ -159,6 +171,8 @@ function UsersTab() {
   const [editTarget, setEditTarget] = useState<UserProfileWithRole | null | 'new'>(null)
   const [search,     setSearch]     = useState('')
   const [roleFilter, setRoleFilter] = useState('')
+  const confirm = useConfirm()
+  const alert = useAlert()
 
   // Filter by search text (email / name / username) and by role
   const q = search.trim().toLowerCase()
@@ -172,13 +186,22 @@ function UsersTab() {
     )
   })
 
-  const handleDelete = (u: UserProfileWithRole) => {
-    if (u.user_id === currentUser?.user_id) { alert('You cannot delete your own account.'); return }
-    if (!window.confirm(`Delete user "${u.email ?? u.display_name}"?`)) return
+  const handleDelete = async (u: UserProfileWithRole) => {
+    if (u.user_id === currentUser?.user_id) {
+      await alert('You cannot delete your own account.')
+      return
+    }
+    const ok = await confirm({
+      title: 'Delete User',
+      message: `Delete user "${u.email ?? u.display_name}"?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!ok) return
     deleteUser.mutate(u.user_id)
   }
 
-  const thCls = 'bg-[var(--surface-2)] text-left px-3 py-2.5 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wide border-b border-[var(--border)]'
+  const thCls = 'bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]'
   const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] text-[12.5px]'
 
   return (
@@ -192,22 +215,22 @@ function UsersTab() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search by name or email…"
-          className="flex-1 bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)]"
+          className="flex-1 bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
         />
         <select
           value={roleFilter}
           onChange={e => setRoleFilter(e.target.value)}
-          className="bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)]"
+          className="bg-[var(--surface-0)] border border-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-[9px] text-[13px] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 transition-all"
         >
           <option value="">All Roles</option>
           {roles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
         </select>
-        <span className="flex items-center px-3 text-[12px] text-[var(--text-muted)] whitespace-nowrap">
+        <span className="flex items-center px-3 text-[12px] font-medium text-[var(--text-muted)] whitespace-nowrap bg-[var(--surface-2)] rounded-md border border-[var(--border)]">
           {filteredUsers.length} of {users.length} users
         </span>
       </div>
 
-      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
+      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4 custom-scrollbar" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
         <table className="w-full border-collapse">
           <thead><tr>
             <th className={thCls}>Email</th>
@@ -227,15 +250,15 @@ function UsersTab() {
                     ? u.approved_aes.join(', ')
                     : '—'
               return (
-                <tr key={u.user_id}>
-                  <td className={`${tdCls} font-mono font-semibold`}>{u.email ?? u.username ?? u.user_id}</td>
+                <tr key={u.user_id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
+                  <td className={`${tdCls} font-mono font-semibold text-[var(--text-primary)]`}>{u.email ?? u.username ?? u.user_id}</td>
                   <td className={tdCls}>{u.display_name || <span className="text-[var(--text-muted)]">—</span>}</td>
                   <td className={tdCls}>
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-[650] bg-[var(--surface-2)] text-[var(--text-secondary)]">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-[650] bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border)]">
                       {rl?.label ?? u.inv_role_key ?? '—'}
                     </span>
                   </td>
-                  <td className={`${tdCls} text-[11.5px] text-[var(--text-muted)]`}>{aeAccess}</td>
+                  <td className={`${tdCls} text-[11.5px] text-[var(--text-muted)] font-mono`}>{aeAccess}</td>
                   <td className={`${tdCls} text-right`}>
                     <div className="flex gap-1.5 justify-end">
                       <Button size="sm" variant="ghost" onClick={() => setEditTarget(u)}>✎</Button>
@@ -383,10 +406,10 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
             </div>
           </Field>
           <Field label="Approved AEs (multi-select)">
-            <div className="flex flex-col gap-1.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[9px] p-2.5 max-h-28 overflow-y-auto">
+            <div className="flex flex-col gap-1.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[9px] p-2.5 max-h-28 overflow-y-auto custom-scrollbar">
               {aes.map(a => (
-                <label key={a} className="flex items-center gap-2 text-[13px] cursor-pointer">
-                  <input type="checkbox" checked={approvedAEs.includes(a)} onChange={() => toggleAE(a)} className="cursor-pointer" />
+                <label key={a} className="flex items-center gap-2 text-[13px] cursor-pointer hover:opacity-90">
+                  <input type="checkbox" checked={approvedAEs.includes(a)} onChange={() => toggleAE(a)} className="cursor-pointer accent-[var(--accent)]" />
                   {a}
                 </label>
               ))}
