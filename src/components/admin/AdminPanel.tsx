@@ -35,7 +35,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         else onClose()
       }}
       title={modalTitle}
-      maxWidth="max-w-3xl"
+      maxWidth="max-w-4xl"
       footer={
         !isEditingRole && !isEditingUser ? (
           <Button variant="default" onClick={onClose}>
@@ -111,13 +111,21 @@ function RolesTab({ onEdit }: { onEdit: (r: InvRole | 'new') => void }) {
     deleteRole.mutate(r.id)
   }
 
-  const thCls = 'bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]'
-  const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] text-[12.5px]'
+  const thCls = 'bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider border-b border-[var(--border)] whitespace-nowrap'
+  const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] text-[12.5px] align-middle'
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
       <Banner>Define what each role can do, then assign people to roles under the <b>Users</b> tab.</Banner>
-      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4 custom-scrollbar" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
+
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-[12.5px] font-medium text-[var(--text-muted)] bg-[var(--surface-2)] px-2.5 py-1 rounded-md border border-[var(--border)]">
+          {roles.length} roles configured
+        </span>
+        <Button variant="primary" onClick={() => onEdit('new')}>＋ Add Role</Button>
+      </div>
+
+      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden custom-scrollbar" style={{ maxHeight: '48vh', overflowY: 'auto' }}>
         <table className="w-full border-collapse">
           <thead><tr>
             <th className={thCls}>Role</th>
@@ -131,16 +139,16 @@ function RolesTab({ onEdit }: { onEdit: (r: InvRole | 'new') => void }) {
               const tags = permSummary(r.perms)
               return (
                 <tr key={r.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                  <td className={`${tdCls} font-semibold text-[var(--text-primary)]`}>{r.label}</td>
+                  <td className={`${tdCls} font-semibold text-[var(--text-primary)] whitespace-nowrap`}>{r.label}</td>
                   <td className={tdCls}>
                     <div className="flex flex-wrap gap-1">
                       {tags.map(t => (
-                        <span key={t} className="text-[11px] px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)] border border-[color-mix(in_srgb,var(--accent)_28%,transparent)] font-medium">{t}</span>
+                        <span key={t} className="text-[11px] px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)] border border-[color-mix(in_srgb,var(--accent)_28%,transparent)] font-medium whitespace-nowrap">{t}</span>
                       ))}
                     </div>
                   </td>
                   <td className={`${tdCls} text-center font-medium`}>{nUsers}</td>
-                  <td className={`${tdCls} text-right`}>
+                  <td className={`${tdCls} text-right whitespace-nowrap`}>
                     <div className="flex gap-1.5 justify-end">
                       <Button size="sm" variant="ghost" onClick={() => onEdit(r)}>✎</Button>
                       <Button size="sm" variant="danger" onClick={() => handleDelete(r)}>🗑</Button>
@@ -152,8 +160,7 @@ function RolesTab({ onEdit }: { onEdit: (r: InvRole | 'new') => void }) {
           </tbody>
         </table>
       </div>
-      <Button variant="primary" onClick={() => onEdit('new')}>＋ Add Role</Button>
-    </>
+    </div>
   )
 }
 
@@ -246,15 +253,15 @@ function UsersTab({ onEdit }: { onEdit: (u: UserProfileWithRole | 'new') => void
     deleteUser.mutate(u.user_id)
   }
 
-  const thCls = 'bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]'
-  const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] text-[12.5px]'
+  const thCls = 'bg-[var(--surface-2)] text-left px-3.5 py-3 font-[650] text-[var(--text-secondary)] text-[11px] uppercase tracking-wider border-b border-[var(--border)] whitespace-nowrap'
+  const tdCls = 'px-3.5 py-2.5 border-b border-[var(--border)] text-[12.5px] align-middle'
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
       <Banner>Each person signs in with their own email &amp; password. Assign a <b>Role</b> and set <b>AE access</b> for client visibility.</Banner>
 
-      {/* Search + role filter */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-3">
+      {/* Search + role filter + Add button toolbar */}
+      <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
         <input
           type="text"
           value={search}
@@ -270,12 +277,13 @@ function UsersTab({ onEdit }: { onEdit: (u: UserProfileWithRole | 'new') => void
           <option value="">All Roles</option>
           {roles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
         </select>
-        <span className="flex items-center px-3 text-[12px] font-medium text-[var(--text-muted)] whitespace-nowrap bg-[var(--surface-2)] rounded-md border border-[var(--border)]">
+        <Button variant="primary" onClick={() => onEdit('new')}>＋ Add User</Button>
+        <span className="flex items-center justify-center px-3 py-2 text-[12px] font-medium text-[var(--text-muted)] whitespace-nowrap bg-[var(--surface-2)] rounded-md border border-[var(--border)]">
           {filteredUsers.length} of {users.length} users
         </span>
       </div>
 
-      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden mb-4 custom-scrollbar" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
+      <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden custom-scrollbar" style={{ maxHeight: '48vh', overflowY: 'auto' }}>
         <table className="w-full border-collapse">
           <thead><tr>
             <th className={thCls}>Email</th>
@@ -285,6 +293,13 @@ function UsersTab({ onEdit }: { onEdit: (u: UserProfileWithRole | 'new') => void
             <th className={`${thCls} text-right`}>Actions</th>
           </tr></thead>
           <tbody>
+            {filteredUsers.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-center py-10 text-[var(--text-muted)] text-[13px]">
+                  No users found.
+                </td>
+              </tr>
+            )}
             {filteredUsers.map(u => {
               const rl = u.inv_role
               const aeAccess = (rl?.perms?.viewClient)
@@ -296,15 +311,15 @@ function UsersTab({ onEdit }: { onEdit: (u: UserProfileWithRole | 'new') => void
                     : '—'
               return (
                 <tr key={u.user_id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                  <td className={`${tdCls} font-mono font-semibold text-[var(--text-primary)]`}>{u.email ?? u.username ?? u.user_id}</td>
-                  <td className={tdCls}>{u.display_name || <span className="text-[var(--text-muted)]">—</span>}</td>
-                  <td className={tdCls}>
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-[650] bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border)]">
+                  <td className={`${tdCls} font-mono font-semibold text-[var(--text-primary)] whitespace-nowrap`}>{u.email ?? u.username ?? u.user_id}</td>
+                  <td className={`${tdCls} font-medium whitespace-nowrap`}>{u.display_name || <span className="text-[var(--text-muted)]">—</span>}</td>
+                  <td className={`${tdCls} whitespace-nowrap`}>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-[650] bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border)] whitespace-nowrap">
                       {rl?.label ?? u.inv_role_key ?? '—'}
                     </span>
                   </td>
-                  <td className={`${tdCls} text-[11.5px] text-[var(--text-muted)] font-mono`}>{aeAccess}</td>
-                  <td className={`${tdCls} text-right`}>
+                  <td className={`${tdCls} text-[11.5px] text-[var(--text-muted)] font-mono whitespace-nowrap`}>{aeAccess}</td>
+                  <td className={`${tdCls} text-right whitespace-nowrap`}>
                     <div className="flex gap-1.5 justify-end">
                       <Button size="sm" variant="ghost" onClick={() => onEdit(u)}>✎</Button>
                       <Button size="sm" variant="danger" onClick={() => handleDelete(u)}>🗑</Button>
@@ -316,8 +331,7 @@ function UsersTab({ onEdit }: { onEdit: (u: UserProfileWithRole | 'new') => void
           </tbody>
         </table>
       </div>
-      <Button variant="primary" onClick={() => onEdit('new')}>＋ Add User</Button>
-    </>
+    </div>
   )
 }
 
