@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { PERM_DEFS } from '../../lib/constants'
 import type { InvRole, RolePerms, UserProfileWithRole } from '../../types/database'
 import { Button } from '../ui/Button'
-import { Modal, ModalFooter } from '../ui/Modal'
+import { Modal } from '../ui/Modal'
 import { Field, Grid2, Input, Select, Banner } from '../ui/Field'
 import { useLookups } from '../../hooks/useMachines'
 import { useConfirm, useAlert } from '../ui/DialogProvider'
@@ -13,30 +13,85 @@ type AdminTab = 'roles' | 'users'
 
 export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<AdminTab>('roles')
+  const [roleEditTarget, setRoleEditTarget] = useState<InvRole | null | 'new'>(null)
+  const [userEditTarget, setUserEditTarget] = useState<UserProfileWithRole | null | 'new'>(null)
+
+  const isEditingRole = roleEditTarget !== null
+  const isEditingUser = userEditTarget !== null
+
+  let modalTitle = 'Access Control'
+  if (isEditingRole) {
+    modalTitle = roleEditTarget === 'new' ? 'Add Role' : 'Edit Role'
+  } else if (isEditingUser) {
+    modalTitle = userEditTarget === 'new' ? 'Add User' : 'Edit User'
+  }
+
   return (
-    <Modal open onClose={onClose} title="Access Control" maxWidth="max-w-3xl"
-      footer={<Button variant="default" onClick={onClose}>Close</Button>}>
-      {/* Tab nav */}
-      <div className="flex gap-1 bg-[var(--surface-2)] p-1 rounded-[11px] w-fit mb-4 mt-2">
-        {(['roles','users'] as AdminTab[]).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-5 py-2 rounded-[8px] border-none text-[13.5px] font-[650] cursor-pointer transition-all ${tab === t ? 'bg-[var(--surface-1)] text-[var(--text-primary)] shadow-[var(--shadow)]' : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
-            {t === 'roles' ? '🛡️ Roles' : '👤 Users'}
-          </button>
-        ))}
-      </div>
-      {tab === 'roles' ? <RolesTab /> : <UsersTab />}
+    <Modal
+      open
+      onClose={() => {
+        if (isEditingRole) setRoleEditTarget(null)
+        else if (isEditingUser) setUserEditTarget(null)
+        else onClose()
+      }}
+      title={modalTitle}
+      maxWidth="max-w-3xl"
+      footer={
+        !isEditingRole && !isEditingUser ? (
+          <Button variant="default" onClick={onClose}>
+            Close
+          </Button>
+        ) : undefined
+      }
+    >
+      {!isEditingRole && !isEditingUser && (
+        <>
+          {/* Tab nav */}
+          <div className="flex gap-1 bg-[var(--surface-2)] p-1 rounded-[11px] w-fit mb-4">
+            {(['roles', 'users'] as AdminTab[]).map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-5 py-2 rounded-[8px] border-none text-[13.5px] font-[650] cursor-pointer transition-all ${
+                  tab === t
+                    ? 'bg-[var(--surface-1)] text-[var(--text-primary)] shadow-[var(--shadow)]'
+                    : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {t === 'roles' ? '🛡️ Roles' : '👤 Users'}
+              </button>
+            ))}
+          </div>
+          {tab === 'roles' ? (
+            <RolesTab onEdit={setRoleEditTarget} />
+          ) : (
+            <UsersTab onEdit={setUserEditTarget} />
+          )}
+        </>
+      )}
+
+      {isEditingRole && (
+        <RoleFormInline
+          role={roleEditTarget === 'new' ? null : roleEditTarget}
+          onClose={() => setRoleEditTarget(null)}
+        />
+      )}
+
+      {isEditingUser && (
+        <UserFormInline
+          user={userEditTarget === 'new' ? null : userEditTarget}
+          onClose={() => setUserEditTarget(null)}
+        />
+      )}
     </Modal>
   )
 }
 
-/* ── Roles ──────────────────────────────────────────────────────── */
-function RolesTab() {
+/* ── Roles Tab ─────────────────────────────────────────────────── */
+function RolesTab({ onEdit }: { onEdit: (r: InvRole | 'new') => void }) {
   const { data: roles = [] } = useRoles()
   const { data: users = [] } = useUsers()
-  const saveRole   = useSaveRole()
   const deleteRole = useDeleteRole()
-  const [editTarget, setEditTarget] = useState<InvRole | null | 'new'>(null)
   const confirm = useConfirm()
   const alert = useAlert()
 
@@ -87,7 +142,7 @@ function RolesTab() {
                   <td className={`${tdCls} text-center font-medium`}>{nUsers}</td>
                   <td className={`${tdCls} text-right`}>
                     <div className="flex gap-1.5 justify-end">
-                      <Button size="sm" variant="ghost" onClick={() => setEditTarget(r)}>✎</Button>
+                      <Button size="sm" variant="ghost" onClick={() => onEdit(r)}>✎</Button>
                       <Button size="sm" variant="danger" onClick={() => handleDelete(r)}>🗑</Button>
                     </div>
                   </td>
@@ -97,31 +152,16 @@ function RolesTab() {
           </tbody>
         </table>
       </div>
-      <Button variant="primary" onClick={() => setEditTarget('new')}>＋ Add Role</Button>
-
-      {editTarget !== null && (
-        <RoleForm
-          role={editTarget === 'new' ? null : editTarget}
-          onClose={() => setEditTarget(null)}
-          onSave={(label, perms) => {
-            saveRole.mutate(
-              editTarget === 'new' ? { label, perms } : { id: (editTarget as InvRole).id, label, perms },
-              { onSuccess: () => setEditTarget(null) }
-            )
-          }}
-          loading={saveRole.isPending}
-        />
-      )}
+      <Button variant="primary" onClick={() => onEdit('new')}>＋ Add Role</Button>
     </>
   )
 }
 
-function RoleForm({ role, onClose, onSave, loading }: {
+function RoleFormInline({ role, onClose }: {
   role: InvRole | null
   onClose: () => void
-  onSave: (label: string, perms: RolePerms) => void
-  loading: boolean
 }) {
+  const saveRole = useSaveRole()
   const [label, setLabel] = useState(role?.label ?? '')
   const [perms, setPerms] = useState<RolePerms>(role?.perms ?? {})
   const [err,   setErr]   = useState('')
@@ -131,44 +171,49 @@ function RoleForm({ role, onClose, onSave, loading }: {
   const handleSave = () => {
     if (!label.trim()) { setErr('Please enter a role name.'); return }
     setErr('')
-    onSave(label, perms)
+    saveRole.mutate(
+      role ? { id: role.id, label, perms } : { label, perms },
+      { onSuccess: onClose }
+    )
   }
 
   return (
-    <Modal open onClose={onClose} title={role ? 'Edit Role' : 'Add Role'}
-      footer={<ModalFooter onCancel={onClose} onConfirm={handleSave} confirmLabel="Save Role" loading={loading} />}>
-      <div className="flex flex-col gap-4 mt-2">
-        <Field label="Role Name" required>
-          <Input value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Warehouse Staff" />
-        </Field>
-        <Field label="Permissions">
-          <div className="flex flex-col gap-2.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[10px] p-3.5">
-            {PERM_DEFS.map(d => (
-              <label key={d.k} className="flex gap-2.5 items-start cursor-pointer text-[13px] text-[var(--text-primary)] hover:opacity-90">
-                <input type="checkbox" className="mt-0.5 w-4 h-4 cursor-pointer flex-none accent-[var(--accent)]"
-                  checked={!!perms[d.k as keyof RolePerms]}
-                  onChange={() => toggle(d.k)} />
-                <span><b>{d.label}</b><br /><span className="text-[11px] text-[var(--text-muted)]">{d.hint}</span></span>
-              </label>
-            ))}
-          </div>
-        </Field>
-        {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
+    <div className="flex flex-col gap-4">
+      <Field label="Role Name" required>
+        <Input value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Warehouse Staff" autoFocus />
+      </Field>
+      <Field label="Permissions">
+        <div className="flex flex-col gap-2.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[10px] p-3.5">
+          {PERM_DEFS.map(d => (
+            <label key={d.k} className="flex gap-2.5 items-start cursor-pointer text-[13px] text-[var(--text-primary)] hover:opacity-90">
+              <input type="checkbox" className="mt-0.5 w-4 h-4 cursor-pointer flex-none accent-[var(--accent)]"
+                checked={!!perms[d.k as keyof RolePerms]}
+                onChange={() => toggle(d.k)} />
+              <span><b>{d.label}</b><br /><span className="text-[11px] text-[var(--text-muted)]">{d.hint}</span></span>
+            </label>
+          ))}
+        </div>
+      </Field>
+      {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
+
+      <div className="flex gap-2.5 justify-end pt-2 border-t border-[var(--border)]">
+        <Button variant="default" onClick={onClose} disabled={saveRole.isPending}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSave} disabled={saveRole.isPending}>
+          {saveRole.isPending ? 'Saving…' : 'Save Role'}
+        </Button>
       </div>
-    </Modal>
+    </div>
   )
 }
 
-/* ── Users ──────────────────────────────────────────────────────── */
-function UsersTab() {
+/* ── Users Tab ─────────────────────────────────────────────────── */
+function UsersTab({ onEdit }: { onEdit: (u: UserProfileWithRole | 'new') => void }) {
   const { user: currentUser } = useAuth()
-  const { data: users  = [] } = useUsers()
-  const { data: roles  = [] } = useRoles()
-  const { data: lookups }     = useLookups()
-  const createUser = useCreateUser()
-  const updateUser = useUpdateUser()
+  const { data: users = [] } = useUsers()
+  const { data: roles = [] } = useRoles()
   const deleteUser = useDeleteUser()
-  const [editTarget, setEditTarget] = useState<UserProfileWithRole | null | 'new'>(null)
   const [search,     setSearch]     = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const confirm = useConfirm()
@@ -261,7 +306,7 @@ function UsersTab() {
                   <td className={`${tdCls} text-[11.5px] text-[var(--text-muted)] font-mono`}>{aeAccess}</td>
                   <td className={`${tdCls} text-right`}>
                     <div className="flex gap-1.5 justify-end">
-                      <Button size="sm" variant="ghost" onClick={() => setEditTarget(u)}>✎</Button>
+                      <Button size="sm" variant="ghost" onClick={() => onEdit(u)}>✎</Button>
                       <Button size="sm" variant="danger" onClick={() => handleDelete(u)}>🗑</Button>
                     </div>
                   </td>
@@ -271,44 +316,21 @@ function UsersTab() {
           </tbody>
         </table>
       </div>
-      <Button variant="primary" onClick={() => setEditTarget('new')}>＋ Add User</Button>
-
-      {editTarget !== null && (
-        <UserForm
-          user={editTarget === 'new' ? null : editTarget}
-          roles={roles}
-          aes={lookups?.aes ?? []}
-          onClose={() => setEditTarget(null)}
-          onSave={async data => {
-            if (editTarget === 'new') {
-              await createUser.mutateAsync(data as Parameters<typeof createUser.mutate>[0])
-            } else {
-              await updateUser.mutateAsync({ user_id: (editTarget as UserProfileWithRole).user_id, ...data })
-            }
-            setEditTarget(null)
-          }}
-          loading={createUser.isPending || updateUser.isPending}
-        />
-      )}
+      <Button variant="primary" onClick={() => onEdit('new')}>＋ Add User</Button>
     </>
   )
 }
 
-function UserForm({ user, roles, aes, onClose, onSave, loading }: {
+function UserFormInline({ user, onClose }: {
   user: UserProfileWithRole | null
-  roles: InvRole[]
-  aes: string[]
   onClose: () => void
-  onSave: (data: {
-    email: string
-    display_name: string
-    inv_role_key: string
-    password: string
-    ae_code: string | null
-    approved_aes: string[]
-  }) => Promise<void>
-  loading: boolean
 }) {
+  const { data: roles = [] } = useRoles()
+  const { data: lookups } = useLookups()
+  const createUser = useCreateUser()
+  const updateUser = useUpdateUser()
+
+  const aes = lookups?.aes ?? []
   const isEdit = !!user
   const [email,       setEmail]       = useState(user?.email ?? '')
   const [displayName, setDisplayName] = useState(user?.display_name ?? '')
@@ -319,10 +341,10 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
   const [err,         setErr]         = useState('')
 
   const isAccountExec = roleKey === 'account_exec'
+  const loading = createUser.isPending || updateUser.isPending
 
   const handleDisplayNameChange = (val: string) => {
     setDisplayName(val)
-    // Auto-suggest last name as AE code if creating new Account Executive
     if (!isEdit && isAccountExec) {
       const parts = val.trim().split(/\s+/)
       if (parts.length > 0) {
@@ -356,69 +378,81 @@ function UserForm({ user, roles, aes, onClose, onSave, loading }: {
     setErr('')
     try {
       const finalAe = isAccountExec && aeCode.trim() ? aeCode.trim().toUpperCase() : null
-      await onSave({ email, display_name: displayName, inv_role_key: roleKey, password, ae_code: finalAe, approved_aes: approvedAEs })
+      const payload = { email, display_name: displayName, inv_role_key: roleKey, password, ae_code: finalAe, approved_aes: approvedAEs }
+      if (isEdit) {
+        await updateUser.mutateAsync({ user_id: user.user_id, ...payload })
+      } else {
+        await createUser.mutateAsync(payload)
+      }
+      onClose()
     } catch (e: unknown) {
       setErr((e as Error)?.message || 'Failed to save user.')
     }
   }
 
   return (
-    <Modal open onClose={onClose} title={isEdit ? 'Edit User' : 'Add User'}
-      footer={<ModalFooter onCancel={onClose} onConfirm={handleSave} confirmLabel="Save User" loading={loading} />}>
-      <div className="flex flex-col gap-4 mt-2">
-        <Grid2>
-          <Field label="Email" required>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="user@esprintmedia.com" readOnly={isEdit} />
-          </Field>
-          <Field label="Display Name">
-            <Input value={displayName} onChange={e => handleDisplayNameChange(e.target.value)} placeholder="Full name (e.g. Angelica Moreno)" />
-          </Field>
-        </Grid2>
-        <Grid2>
-          <Field label="Role" required>
-            <Select value={roleKey} onChange={e => handleRoleChange(e.target.value)}>
-              {roles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
-            </Select>
-          </Field>
-          <Field label={isEdit ? 'Password (blank = keep)' : 'Password'} required={!isEdit}>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? '••••••' : 'Set a password'} autoComplete="new-password" />
-          </Field>
-        </Grid2>
-        <Banner>
-          Set an <b>Own AE code</b> (Last Name) for Account Executives. Pick <b>Approved AEs</b> for Managers / Team Leaders. Full-access roles see all clients.
-        </Banner>
-        <Grid2>
-          <Field
-            label="Own AE code (Last name)"
-            hint={isAccountExec ? "AE's Last Name (e.g. MORENO, MARCO)" : "Only applicable for Account Executives"}
-          >
-            <div className="relative">
-              <Input
-                list="ae-codes-list"
-                value={aeCode}
-                disabled={!isAccountExec}
-                onChange={e => setAeCode(e.target.value.toUpperCase())}
-                placeholder={isAccountExec ? "e.g. MORENO" : "— N/A for this role —"}
-              />
-              <datalist id="ae-codes-list">
-                {aes.map(a => <option key={a} value={a} />)}
-              </datalist>
-            </div>
-          </Field>
-          <Field label="Approved AEs (multi-select)">
-            <div className="flex flex-col gap-1.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[9px] p-2.5 max-h-28 overflow-y-auto custom-scrollbar">
-              {aes.map(a => (
-                <label key={a} className="flex items-center gap-2 text-[13px] cursor-pointer hover:opacity-90">
-                  <input type="checkbox" checked={approvedAEs.includes(a)} onChange={() => toggleAE(a)} className="cursor-pointer accent-[var(--accent)]" />
-                  {a}
-                </label>
-              ))}
-            </div>
-          </Field>
-        </Grid2>
-        {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
+    <div className="flex flex-col gap-4">
+      <Grid2>
+        <Field label="Email" required>
+          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="user@esprintmedia.com" readOnly={isEdit} autoFocus={!isEdit} />
+        </Field>
+        <Field label="Display Name">
+          <Input value={displayName} onChange={e => handleDisplayNameChange(e.target.value)} placeholder="Full name (e.g. Angelica Moreno)" />
+        </Field>
+      </Grid2>
+      <Grid2>
+        <Field label="Role" required>
+          <Select value={roleKey} onChange={e => handleRoleChange(e.target.value)}>
+            {roles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+          </Select>
+        </Field>
+        <Field label={isEdit ? 'Password (blank = keep)' : 'Password'} required={!isEdit}>
+          <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? '••••••' : 'Set a password'} autoComplete="new-password" />
+        </Field>
+      </Grid2>
+      <Banner>
+        Set an <b>Own AE code</b> (Last Name) for Account Executives. Pick <b>Approved AEs</b> for Managers / Team Leaders. Full-access roles see all clients.
+      </Banner>
+      <Grid2>
+        <Field
+          label="Own AE code (Last name)"
+          hint={isAccountExec ? "AE's Last Name (e.g. MORENO, MARCO)" : "Only applicable for Account Executives"}
+        >
+          <div className="relative">
+            <Input
+              list="ae-codes-list"
+              value={aeCode}
+              disabled={!isAccountExec}
+              onChange={e => setAeCode(e.target.value.toUpperCase())}
+              placeholder={isAccountExec ? "e.g. MORENO" : "— N/A for this role —"}
+            />
+            <datalist id="ae-codes-list">
+              {aes.map(a => <option key={a} value={a} />)}
+            </datalist>
+          </div>
+        </Field>
+        <Field label="Approved AEs (multi-select)">
+          <div className="flex flex-col gap-1.5 bg-[var(--surface-0)] border border-[var(--border)] rounded-[9px] p-2.5 max-h-28 overflow-y-auto custom-scrollbar">
+            {aes.map(a => (
+              <label key={a} className="flex items-center gap-2 text-[13px] cursor-pointer hover:opacity-90">
+                <input type="checkbox" checked={approvedAEs.includes(a)} onChange={() => toggleAE(a)} className="cursor-pointer accent-[var(--accent)]" />
+                {a}
+              </label>
+            ))}
+          </div>
+        </Field>
+      </Grid2>
+      {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
+
+      <div className="flex gap-2.5 justify-end pt-2 border-t border-[var(--border)]">
+        <Button variant="default" onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSave} disabled={loading}>
+          {loading ? 'Saving…' : 'Save User'}
+        </Button>
       </div>
-    </Modal>
+    </div>
   )
 }
 
